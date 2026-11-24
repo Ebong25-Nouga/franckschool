@@ -3,6 +3,7 @@ import { BrowserRouter, HashRouter, Navigate, Route, Routes } from 'react-router
 import { AuthProvider, accueilParEspace, useAuth, type Espace } from './auth';
 import AppShell from './components/AppShell';
 import { ToastProvider } from './components/kit';
+import { Toaster } from './components/ui/sonner';
 import { Parametres, Utilisateurs } from './pages/etablissement/Administration';
 import Caisse from './pages/etablissement/Caisse';
 import { Classes, Professeurs } from './pages/etablissement/ClassesProfesseurs';
@@ -80,6 +81,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
+        <Toaster position="bottom-right" theme="light" />
       </ToastProvider>
     </AuthProvider>
   );
