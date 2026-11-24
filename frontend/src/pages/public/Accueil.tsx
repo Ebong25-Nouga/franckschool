@@ -32,7 +32,9 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { ApercuDirection, ApercuEnseignant, ApercuParent, ApercuSecretariat, FenetreApp, MiniBulletin, MiniJournal, MiniRecu, MiniTableau } from './accueil/Apercus';
+import { ApercuDirection, ApercuEnseignant, ApercuParent, ApercuSecretariat, FenetreApp, MiniJournal } from './accueil/Apercus';
+import { Tarifs } from './accueil/Tarifs';
+import { VideoPresentation } from './accueil/VideoPresentation';
 
 /* ---------------------------------------------------------------
  * Contenu (tiré du cahier des charges, document maître V1)
@@ -42,6 +44,7 @@ const liens = [
   { href: '#espaces', label: 'Les espaces' },
   { href: '#caisse', label: 'La caisse' },
   { href: '#securite', label: 'Sécurité' },
+  { href: '#tarifs', label: 'Tarifs' },
   { href: '#questions', label: 'Questions' },
 ];
 
@@ -105,7 +108,7 @@ const questions = [
   { q: 'Peut-on limiter ce que fait chaque secrétaire ?', r: 'Oui. L’administrateur choisit les droits de chaque secrétaire au moment de créer son compte, et peut les modifier à tout moment. Le menu de la secrétaire n’affiche que ce qui lui est permis.' },
   { q: 'Que se passe-t-il si on supprime un élève ou un paiement par erreur ?', r: 'Rien n’est détruit depuis l’interface. Un élève est archivé, un paiement confirmé est annulé par une écriture inverse. L’historique reste consultable par l’administration.' },
   { q: 'Les bulletins suivent-ils le système camerounais ?', r: 'Oui : notes sur 20, coefficients, six séquences réparties en trois trimestres, moyennes, rangs et appréciations.' },
-  { q: 'Combien coûte Franck School ?', r: 'Les offres dépendent de la taille de l’établissement. Elles vous sont présentées lors de la démonstration.' },
+  { q: 'Combien coûte Franck School ?', r: 'Un abonnement par établissement, selon le nombre d’élèves : voir la section Tarifs. Les tarifs affichés sont provisoires et vous seront confirmés lors de la démonstration.' },
 ];
 
 /* ---------------------------------------------------------------
@@ -131,10 +134,10 @@ export default function Accueil() {
             <img src="/logo.svg" alt="" className="size-9 rounded-[10px] shadow-[0_0_0_1px_rgb(255_255_255/0.15)]" />
             <span className="font-display text-[19px] font-extrabold tracking-[-0.02em]">Franck School</span>
           </Link>
-          <ul className="hidden items-center gap-1 lg:flex">
+          <ul className="hidden items-center gap-0.5 xl:flex">
             {liens.map((l) => (
               <li key={l.href}>
-                <a href={l.href} className="rounded-lg px-3 py-2 text-[14px] font-medium text-brand-100/85 transition-colors hover:bg-white/10 hover:text-white">{l.label}</a>
+                <a href={l.href} className="whitespace-nowrap rounded-lg px-3 py-2 text-[14px] font-medium text-brand-100/85 transition-colors hover:bg-white/10 hover:text-white">{l.label}</a>
               </li>
             ))}
           </ul>
@@ -148,7 +151,7 @@ export default function Accueil() {
           </div>
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon-lg" className="ml-auto text-white hover:bg-white/10 hover:text-white sm:ml-0 lg:hidden" aria-label="Ouvrir le menu">
+              <Button variant="ghost" size="icon-lg" className="ml-auto text-white hover:bg-white/10 hover:text-white sm:ml-0 xl:hidden" aria-label="Ouvrir le menu">
                 <Menu />
               </Button>
             </SheetTrigger>
@@ -177,23 +180,21 @@ export default function Accueil() {
           <div aria-hidden className="absolute -left-48 -top-48 size-[720px] rounded-full bg-brand-700/45 blur-[140px]" />
           <div aria-hidden className="absolute -right-40 top-1/3 size-[520px] rounded-full bg-brand-500/20 blur-[120px]" />
 
-          <div className="relative mx-auto grid max-w-[1200px] items-center gap-16 px-5 pb-28 pt-36 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:pb-36 lg:pt-44">
-            <div className="animate-entree">
+          <div className="relative mx-auto max-w-[1200px] px-5 pb-24 pt-36 sm:px-8 lg:pt-44">
+            <div className="mx-auto max-w-[860px] animate-entree text-center">
               <Badge variant="outline" className="h-7 gap-2 border-white/20 bg-white/[0.06] px-3 text-[13px] font-medium text-brand-100">
                 <span className="size-1.5 rounded-full bg-feutre" aria-hidden />
                 Pour les écoles privées du Cameroun
               </Badge>
-              <h1 className="mt-6 font-display text-[42px] font-extrabold leading-[0.98] tracking-[-0.045em] sm:text-[60px] xl:text-[64px]">
-                <span className="sm:whitespace-nowrap">Toute votre école,</span>
+              <h1 className="mt-6 font-display text-[42px] font-extrabold leading-[0.98] tracking-[-0.045em] sm:text-[58px] lg:text-[70px]">
+                Toute votre école,
                 <br />
-                de l’inscription
-                <br />
-                au bulletin.
+                <span className="lg:whitespace-nowrap">de l’inscription au bulletin.</span>
               </h1>
-              <p className="mt-7 max-w-[34rem] text-[18px] leading-relaxed text-brand-100/90">
+              <p className="mx-auto mt-7 max-w-[40rem] text-[18px] leading-relaxed text-brand-100/90">
                 Élèves, notes des six séquences, bulletins, caisse et parents réunis sur une seule plateforme. Chaque secrétaire a ses droits, chaque opération est tracée, rien ne se perd d’une année à l’autre.
               </p>
-              <div className="mt-10 flex flex-wrap gap-3">
+              <div className="mt-10 flex flex-wrap justify-center gap-3">
                 <Button onClick={() => setDemo(true)} className="h-12 gap-2 bg-feutre px-6 text-[15px] font-semibold text-encre hover:bg-[#FFD93A]">
                   Demander une démonstration
                   <ArrowRight data-icon="inline-end" />
@@ -202,25 +203,22 @@ export default function Accueil() {
                   <Link to="/connexion">Accéder à mon espace</Link>
                 </Button>
               </div>
-              <dl className="mt-14 grid max-w-[34rem] grid-cols-3 gap-6 border-t border-white/10 pt-7">
-                {[['6', 'séquences, 3 trimestres'], ['5', 'espaces selon le rôle'], ['0', 'donnée effacée en silence']].map(([v, l]) => (
-                  <div key={l}>
-                    <dt className="sr-only">{l}</dt>
-                    <dd className="font-display text-[38px] font-extrabold leading-none tracking-[-0.04em] text-white">{v}</dd>
-                    <dd className="mt-2 text-[13px] leading-snug text-brand-200">{l}</dd>
-                  </div>
-                ))}
-              </dl>
             </div>
 
-            {/* Le produit lui-même, avec le bulletin et le reçu que tout le monde reconnaît */}
-            <div className="relative mx-auto w-full max-w-[600px] lg:mr-0" aria-hidden>
-              <FenetreApp titre="etoiles.franckschool.cm" className="rotate-[-1deg]">
-                <MiniTableau />
-              </FenetreApp>
-              <MiniBulletin className="absolute -bottom-16 -right-3 hidden w-[230px] rotate-[3deg] sm:block lg:-right-10" />
-              <MiniRecu className="absolute -bottom-10 -left-4 w-[240px] -rotate-[3deg] sm:-left-10" />
+            {/* La vidéo Remotion : Franck School en action */}
+            <div className="mx-auto mt-16 max-w-[1080px]">
+              <VideoPresentation />
             </div>
+
+            <dl className="mx-auto mt-16 grid max-w-[760px] grid-cols-3 gap-6 border-t border-white/10 pt-8 text-center">
+              {[['6', 'séquences, 3 trimestres'], ['5', 'espaces selon le rôle'], ['0', 'donnée effacée en silence']].map(([v, l]) => (
+                <div key={l}>
+                  <dt className="sr-only">{l}</dt>
+                  <dd className="font-display text-[40px] font-extrabold leading-none tracking-[-0.04em] text-white">{v}</dd>
+                  <dd className="mt-2 text-[13px] leading-snug text-brand-200">{l}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
 
@@ -395,6 +393,9 @@ export default function Accueil() {
             </div>
           </div>
         </section>
+
+        {/* ===================== Tarifs ===================== */}
+        <Tarifs onDemo={() => setDemo(true)} />
 
         {/* ===================== Questions ===================== */}
         <section id="questions" className="scroll-mt-20 border-t border-papier-ligne bg-papier py-28">
