@@ -4,11 +4,12 @@ Choix établis avec le skill de design UI/UX Pro Max, puis adaptés aux demandes
 
 | Élément | Choix | Raison |
 |---|---|---|
-| Style | Minimaliste et structuré (« Swiss style ») | Recommandé pour les applications de gestion et les tableaux de bord : clair, lisible, sobre |
+| Identité | « Le cahier d’écolier » : bleu encre, papier, rouge de correction, surligneur jaune pour ce qui demande une action | Tirée du monde scolaire camerounais, reconnaissable au premier coup d’œil |
+| Élément signature | La frise de l’nnée (3 trimestres, 6 séquences) | Montre où en est l’école dans l’nnée, sur chaque tableau de bord |
 | Couleur principale | **Bleu** (`#1E3A8A` marine, `#1E40AF` boutons) | Couleur de l'école, demandée par le propriétaire |
 | Couleur par école | Variables CSS `--brand-*` dans `frontend/src/index.css` | Chaque établissement peut avoir sa teinte (`etablissements.couleur_principale`) |
 | Couleurs d'état | Vert = payé/validé, ambre = en attente, rouge = impayé/refusé | Toujours accompagnées d'un texte : la couleur seule ne porte jamais l'information |
-| Police | Plus Jakarta Sans (intégrée, sans appel à Google) | Moderne, très lisible, fonctionne hors connexion |
+| Polices | Bricolage Grotesque (titres, chiffres), Figtree (texte), intégrées | Caractère affirmé pour les titres, grande lisibilité pour le texte, fonctionnent hors connexion |
 | Icônes | Lucide (SVG) | Pas d'émojis comme icônes |
 | Graphiques | Recharts | Barres pour comparer les mois et les écoles |
 

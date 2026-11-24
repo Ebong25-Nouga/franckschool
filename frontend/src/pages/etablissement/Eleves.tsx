@@ -1,144 +1,244 @@
-import { Download, Eye, Pencil, SearchX, UserPlus, X } from 'lucide-react';
+import clsx from 'clsx';
+import { Banknote, Download, FileBadge2, MoreHorizontal, Pencil, Phone, SearchX, UserPlus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Avatar, Badge, Button, Card, EmptyState, PageHeader, Progress, SearchInput, Select, Table, Td } from '../../components/ui';
-import { classes, eleves, fcfa, type Eleve } from '../../data/demo';
+import { EncaissementModal, InscriptionModal } from '../../components/Actions';
+import { Avatar, Button, Drawer, EmptyState, Gauge, Grade, IconButton, PageHeader, Panel, Pill, SearchInput, Segmented, Select, Table, Td, useToast } from '../../components/ui';
+import { appreciation, classes, eleves, fcfa, matieresClasse, type Eleve } from '../../data/demo';
 
-const statutTone = { nouveau: 'brand', ancien: 'slate', redoublant: 'amber' } as const;
+const statutTone = { nouveau: 'encre', ancien: 'neutre', redoublant: 'orange' } as const;
+type Filtre = 'tous' | 'impayes' | 'difficulte';
 
 export default function Eleves() {
+  const toast = useToast();
   const [q, setQ] = useState('');
-  const [classe, setClasse] = useState('Toutes classes');
-  const [statut, setStatut] = useState('Tous statuts');
+  const [classe, setClasse] = useState('Toutes les classes');
+  const [filtre, setFiltre] = useState<Filtre>('tous');
   const [choisi, setChoisi] = useState<Eleve | null>(null);
+  const [modal, setModal] = useState<'inscription' | 'paiement' | null>(null);
 
-  const liste = useMemo(
-    () =>
-      eleves.filter(
-        (e) =>
-          (classe === 'Toutes classes' || e.classe === classe) &&
-          (statut === 'Tous statuts' || e.statut === statut.toLowerCase()) &&
-          `${e.nom} ${e.prenom} ${e.matricule}`.toLowerCase().includes(q.toLowerCase()),
-      ),
-    [q, classe, statut],
-  );
+  const base = useMemo(() => eleves.filter((e) => (classe === 'Toutes les classes' || e.classe === classe) && `${e.nom} ${e.prenom} ${e.matricule}`.toLowerCase().includes(q.toLowerCase())), [q, classe]);
+  const liste = base.filter((e) => (filtre === 'impayes' ? e.paye < e.du : filtre === 'difficulte' ? e.moyenne < 10 : true));
 
   return (
     <>
       <PageHeader
         title="Élèves"
-        subtitle={`${eleves.length} élèves inscrits en 2026-2027`}
+        lead="842 élèves inscrits pour 2026-2027, dont 37 nouveaux et 19 redoublants."
         actions={
           <>
-            <Button variant="secondary" icon={Download}>Exporter</Button>
-            <Button icon={UserPlus}>Inscrire un élève</Button>
+            <Button variant="secondary" icon={Download} onClick={() => toast('Liste exportée au format Excel (élèves filtrés).')}>Exporter</Button>
+            <Button icon={UserPlus} onClick={() => setModal('inscription')}>Inscrire un élève</Button>
           </>
         }
       />
 
-      <Card>
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center">
-          <SearchInput value={q} onChange={setQ} label="Rechercher un élève" placeholder="Nom, prénom ou matricule…" />
-          <div className="grid grid-cols-2 gap-3 sm:ml-auto sm:flex">
-            <Select hideLabel label="Classe" value={classe} onChange={setClasse} options={['Toutes classes', ...classes]} />
-            <Select hideLabel label="Statut" value={statut} onChange={setStatut} options={['Tous statuts', 'Nouveau', 'Ancien', 'Redoublant']} />
+      <Panel>
+        <div className="flex flex-col gap-3 p-4 sm:p-5 lg:flex-row lg:items-center">
+          <Segmented
+            label="Filtrer les élèves"
+            value={filtre}
+            onChange={setFiltre}
+            options={[
+              { value: 'tous', label: 'Tous', count: base.length },
+              { value: 'impayes', label: 'Impayés', count: base.filter((e) => e.paye < e.du).length },
+              { value: 'difficulte', label: 'Moyenne < 10', count: base.filter((e) => e.moyenne < 10).length },
+            ]}
+          />
+          <div className="grid gap-3 sm:grid-cols-[1fr_200px] lg:ml-auto lg:w-[520px]">
+            <SearchInput value={q} onChange={setQ} label="Rechercher un élève" placeholder="Nom, prénom ou matricule" />
+            <Select hideLabel label="Classe" value={classe} onChange={setClasse} options={['Toutes les classes', ...classes]} />
           </div>
         </div>
 
         {liste.length === 0 ? (
-          <EmptyState icon={SearchX} title="Aucun élève trouvé" text="Modifiez la recherche ou les filtres." />
+          <EmptyState icon={SearchX} title="Aucun élève ne correspond" text="Essayez un autre nom, ou retirez le filtre de classe." action={<Button variant="secondary" onClick={() => { setQ(''); setClasse('Toutes les classes'); setFiltre('tous'); }}>Effacer les filtres</Button>} />
         ) : (
-          <Table caption="Liste des élèves" head={['Élève', 'Matricule', 'Classe', 'Statut', 'Scolarité payée', '']}>
+          <>
+          {/* Téléphone : une carte par élève */}
+          <ul className="divide-y divide-papier-ligne/70 border-t border-papier-ligne/70 sm:hidden">
             {liste.map((e) => (
-              <tr key={e.id} className="transition-colors hover:bg-slate-50/80">
+              <li key={e.id}>
+                <button onClick={() => setChoisi(e)} className="flex w-full cursor-pointer items-center gap-3 px-4 py-3.5 text-left active:bg-papier">
+                  <Avatar name={`${e.nom} ${e.prenom}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{e.nom} {e.prenom}</span>
+                    <span className="block text-xs text-encre-doux">{e.classe} · <span className="font-mono">{e.matricule}</span></span>
+                    {e.paye < e.du && <span className="mt-0.5 block text-xs font-semibold text-stylo chiffres">Reste {fcfa(e.du - e.paye)}</span>}
+                  </span>
+                  <Grade value={e.moyenne} size="sm" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden sm:block">
+          <Table caption="Liste des élèves" head={['Élève', 'Classe', 'Statut', { label: 'Moyenne séq. 1', align: 'right' }, 'Scolarité', { label: 'Actions', sr: true }]} minWidth={820}>
+            {liste.map((e) => (
+              <tr key={e.id} onClick={() => setChoisi(e)} className="group cursor-pointer transition-colors hover:bg-brand-50/35">
                 <Td>
                   <div className="flex items-center gap-3">
                     <Avatar name={`${e.nom} ${e.prenom}`} />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-900">{e.nom} {e.prenom}</p>
-                      <p className="text-xs text-slate-500">{e.sexe === 'F' ? 'Fille' : 'Garçon'} · {e.tuteur}</p>
+                      <button className="block truncate text-left font-semibold text-encre group-hover:text-brand-800" onClick={(ev) => { ev.stopPropagation(); setChoisi(e); }}>
+                        {e.nom} {e.prenom}
+                      </button>
+                      <p className="font-mono text-xs text-encre-pale">{e.matricule}</p>
                     </div>
                   </div>
                 </Td>
-                <Td className="font-mono text-xs text-slate-600">{e.matricule}</Td>
                 <Td className="whitespace-nowrap font-medium">{e.classe}</Td>
-                <Td><Badge tone={statutTone[e.statut]}>{e.statut[0].toUpperCase() + e.statut.slice(1)}</Badge></Td>
-                <Td><Progress value={Math.round((e.paye / e.du) * 100)} label={`Scolarité payée de ${e.nom}`} /></Td>
+                <Td><Pill tone={statutTone[e.statut]}>{e.statut[0].toUpperCase() + e.statut.slice(1)}</Pill></Td>
+                <Td className="text-right"><Grade value={e.moyenne} /></Td>
+                <Td className="w-[220px]">
+                  <Gauge value={(e.paye / e.du) * 100} label={`Scolarité payée par ${e.nom}`} />
+                  {e.paye < e.du && <p className="mt-1 text-xs text-stylo chiffres">Reste {fcfa(e.du - e.paye)}</p>}
+                </Td>
                 <Td className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <button onClick={() => setChoisi(e)} className="grid size-9 cursor-pointer place-items-center rounded-lg text-slate-500 hover:bg-brand-50 hover:text-brand-800" aria-label={`Voir le dossier de ${e.nom} ${e.prenom}`}>
-                      <Eye className="size-4" />
-                    </button>
-                    <button className="grid size-9 cursor-pointer place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label={`Modifier ${e.nom} ${e.prenom}`}>
-                      <Pencil className="size-4" />
-                    </button>
-                  </div>
+                  <span className="inline-flex" onClick={(ev) => ev.stopPropagation()}>
+                    <IconButton icon={Pencil} label={`Modifier ${e.nom} ${e.prenom}`} onClick={() => setChoisi(e)} />
+                    <IconButton icon={MoreHorizontal} label={`Plus d’actions pour ${e.nom}`} onClick={() => setChoisi(e)} />
+                  </span>
                 </Td>
               </tr>
             ))}
           </Table>
+          </div>
+          </>
         )}
-        <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">{liste.length} résultat{liste.length > 1 ? 's' : ''}</div>
-      </Card>
+        <div className="flex items-center justify-between border-t border-papier-ligne/70 px-6 py-3.5 text-[13px] text-encre-doux">
+          <span>{liste.length} élève{liste.length > 1 ? 's' : ''} affiché{liste.length > 1 ? 's' : ''} sur 842</span>
+          <span className="flex gap-1">
+            <Button size="sm" variant="ghost" disabled>Précédent</Button>
+            <Button size="sm" variant="ghost">Suivant</Button>
+          </span>
+        </div>
+      </Panel>
 
-      {choisi && <Dossier eleve={choisi} onClose={() => setChoisi(null)} />}
+      {choisi && <Dossier eleve={choisi} onClose={() => setChoisi(null)} onPayer={() => setModal('paiement')} />}
+      {modal === 'inscription' && <InscriptionModal onClose={() => setModal(null)} />}
+      {modal === 'paiement' && <EncaissementModal eleveInitial={choisi ?? undefined} onClose={() => setModal(null)} />}
     </>
   );
 }
 
-function Dossier({ eleve: e, onClose }: { eleve: Eleve; onClose: () => void }) {
+type Onglet = 'dossier' | 'scolarite' | 'notes';
+
+function Dossier({ eleve: e, onClose, onPayer }: { eleve: Eleve; onClose: () => void; onPayer: () => void }) {
+  const [onglet, setOnglet] = useState<Onglet>('dossier');
   const reste = e.du - e.paye;
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="dossier-titre">
-      <button className="absolute inset-0 cursor-pointer bg-slate-900/40" aria-label="Fermer" onClick={onClose} />
-      <div className="absolute inset-y-0 right-0 flex w-full max-w-md animate-fade-up flex-col bg-white shadow-pop">
-        <div className="flex items-start justify-between border-b border-slate-100 p-5">
-          <div className="flex items-center gap-3">
-            <Avatar name={`${e.nom} ${e.prenom}`} className="size-12 text-sm" />
-            <div>
-              <h2 id="dossier-titre" className="font-bold text-slate-900">{e.nom} {e.prenom}</h2>
-              <p className="text-sm text-slate-500">{e.matricule} · {e.classe}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="grid size-10 cursor-pointer place-items-center rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Fermer le dossier" autoFocus>
+    <Drawer onClose={onClose} label={`Dossier de ${e.nom} ${e.prenom}`}>
+      <div className="relative bg-brand-950 px-6 pb-6 pt-5 text-white seyes">
+        <div className="flex justify-end">
+          <button onClick={onClose} className="grid size-10 cursor-pointer place-items-center rounded-lg text-brand-200 hover:bg-white/10" aria-label="Fermer le dossier" autoFocus>
             <X className="size-5" />
           </button>
         </div>
-        <div className="flex-1 space-y-6 overflow-y-auto p-5 text-sm">
-          <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Identité</h3>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <div><dt className="text-slate-500">Sexe</dt><dd className="font-medium">{e.sexe === 'F' ? 'Féminin' : 'Masculin'}</dd></div>
-              <div><dt className="text-slate-500">Né(e) le</dt><dd className="font-medium">{new Date(e.dateNaissance).toLocaleDateString('fr-FR')}</dd></div>
-              <div><dt className="text-slate-500">Statut</dt><dd className="font-medium capitalize">{e.statut}</dd></div>
-              <div><dt className="text-slate-500">Année</dt><dd className="font-medium">2026-2027</dd></div>
-            </dl>
-          </section>
-          <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Tuteur principal</h3>
-            <p className="font-medium text-slate-900">{e.tuteur}</p>
-            <p className="text-slate-600">{e.telephone}</p>
-          </section>
-          <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Scolarité</h3>
-            <div className="rounded-lg border border-slate-200 p-4">
-              <div className="flex justify-between"><span className="text-slate-600">Montant dû</span><span className="font-semibold tabular-nums">{fcfa(e.du)}</span></div>
-              <div className="mt-2 flex justify-between"><span className="text-slate-600">Déjà payé</span><span className="font-semibold tabular-nums text-emerald-700">{fcfa(e.paye)}</span></div>
-              <div className="mt-3 flex justify-between border-t border-slate-100 pt-3"><span className="font-semibold">Reste à payer</span><span className={`font-bold tabular-nums ${reste ? 'text-red-600' : 'text-emerald-700'}`}>{fcfa(reste)}</span></div>
-            </div>
-          </section>
-          <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Historique des classes</h3>
-            <ol className="space-y-2">
-              <li className="flex justify-between"><span>2026-2027</span><span className="font-medium">{e.classe}</span></li>
-              <li className="flex justify-between text-slate-500"><span>2025-2026</span><span>Classe précédente</span></li>
-            </ol>
-          </section>
-        </div>
-        <div className="flex gap-2 border-t border-slate-100 p-4">
-          <Button variant="secondary" className="flex-1">Modifier</Button>
-          <Button className="flex-1">Encaisser</Button>
+        <div className="flex items-center gap-4">
+          <Avatar name={`${e.nom} ${e.prenom}`} size="xl" className="ring-4 ring-white/10" />
+          <div className="min-w-0">
+            <h2 className="truncate font-display text-2xl font-bold tracking-[-0.02em]">{e.prenom} {e.nom}</h2>
+            <p className="mt-0.5 text-sm text-brand-200">{e.classe}, matricule {e.matricule}</p>
+            <div className="mt-2 flex gap-2"><Pill tone={statutTone[e.statut]}>{e.statut[0].toUpperCase() + e.statut.slice(1)}</Pill></div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div className="border-b border-papier-ligne/70 px-6 pt-4">
+        <Segmented label="Sections du dossier" value={onglet} onChange={setOnglet} options={[{ value: 'dossier', label: 'Dossier' }, { value: 'scolarite', label: 'Scolarité' }, { value: 'notes', label: 'Notes' }]} />
+        <div className="h-4" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 py-6 text-sm">
+        {onglet === 'dossier' && (
+          <div className="space-y-7">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+              {[
+                ['Sexe', e.sexe === 'F' ? 'Féminin' : 'Masculin'],
+                ['Date de naissance', new Date(e.dateNaissance).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })],
+                ['Lieu de naissance', e.lieuNaissance],
+                ['Absences (heures)', String(e.absences)],
+              ].map(([k, v]) => (
+                <div key={k}><dt className="text-encre-doux">{k}</dt><dd className="mt-0.5 font-semibold">{v}</dd></div>
+              ))}
+            </dl>
+            <div>
+              <h3 className="text-[13px] font-semibold text-encre-doux">Tuteur principal</h3>
+              <div className="mt-2 flex items-center gap-3 rounded-xl bg-papier p-3.5">
+                <Avatar name={e.tuteur} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{e.tuteur}</p>
+                  <p className="text-encre-doux">{e.lien}, {e.telephone}</p>
+                </div>
+                <IconButton icon={Phone} label="Copier le numéro" tone="encre" onClick={() => navigator.clipboard?.writeText(e.telephone).catch(() => {})} />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-[13px] font-semibold text-encre-doux">Parcours</h3>
+              <ol className="mt-2 space-y-0">
+                {[['2026-2027', e.classe, 'En cours'], ['2025-2026', 'Classe précédente', 'Admis'], ['2024-2025', 'Inscription', 'Nouveau']].map(([a, c, d], i) => (
+                  <li key={a} className="relative flex gap-4 pb-4 pl-5">
+                    <span className={clsx('absolute left-0 top-1.5 size-2.5 rounded-full', i === 0 ? 'bg-brand-600 ring-4 ring-brand-100' : 'bg-papier-ligne')} aria-hidden />
+                    {i < 2 && <span className="absolute left-[4.5px] top-5 h-full w-px bg-papier-ligne" aria-hidden />}
+                    <span className="w-20 shrink-0 font-semibold chiffres">{a}</span>
+                    <span className="flex-1 text-encre-doux">{c}</span>
+                    <span className="text-xs font-semibold text-encre-doux">{d}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        )}
+
+        {onglet === 'scolarite' && (
+          <div className="space-y-5">
+            <div className="rounded-2xl bg-papier p-5">
+              <p className="text-encre-doux">Reste à payer</p>
+              <p className={clsx('mt-1 font-display text-[34px] font-extrabold leading-none tracking-[-0.03em] chiffres', reste ? 'text-stylo' : 'text-valide')}>{fcfa(reste)}</p>
+              <Gauge value={(e.paye / e.du) * 100} label="Scolarité payée" className="mt-4" />
+              <p className="mt-2 text-xs text-encre-doux chiffres">{fcfa(e.paye)} payés sur {fcfa(e.du)}</p>
+            </div>
+            <ul className="divide-y divide-papier-ligne/70">
+              {[['Inscription', 25000, 'Payée'], ['1re tranche', 50000, e.paye >= 75000 ? 'Payée' : 'Due'], ['2e tranche', 50000, e.paye >= 125000 ? 'Payée' : 'Due le 30/11'], ['3e tranche', e.du - 125000, e.paye >= e.du ? 'Payée' : 'Due le 15/01']].map(([l, m, s]) => (
+                <li key={l as string} className="flex items-center justify-between py-3">
+                  <span className="font-medium">{l}</span>
+                  <span className="flex items-center gap-3">
+                    <span className="chiffres">{fcfa(m as number)}</span>
+                    <Pill tone={s === 'Payée' ? 'valide' : 'stylo'}>{s as string}</Pill>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {onglet === 'notes' && (
+          <div>
+            <div className="mb-4 flex items-end justify-between rounded-2xl bg-brand-50 p-5">
+              <div>
+                <p className="text-encre-doux">Moyenne de la séquence 1</p>
+                <p className="mt-1 font-display text-[34px] font-extrabold leading-none tracking-[-0.03em] text-brand-800 chiffres">{e.moyenne.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</p>
+              </div>
+              <p className="text-right font-semibold">{appreciation(e.moyenne)}<br /><span className="text-sm font-medium text-encre-doux">Rang 12e/{44}</span></p>
+            </div>
+            <ul className="divide-y divide-papier-ligne/70">
+              {matieresClasse.slice(0, 7).map((m, i) => {
+                const n = Math.max(4, Math.min(19.5, e.moyenne + [1.5, -2, 2.25, -3, 0.5, 3, -1][i]));
+                return (
+                  <li key={m.code} className="flex items-center justify-between py-2.5">
+                    <span>{m.nom} <span className="text-xs text-encre-pale">coef. {m.coef}</span></span>
+                    <Grade value={n} size="sm" />
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 border-t border-papier-ligne/70 bg-papier/60 p-4">
+        <Button variant="secondary" icon={FileBadge2}>Bulletin</Button>
+        <Button icon={Banknote} onClick={onPayer} disabled={!reste}>Encaisser</Button>
+      </div>
+    </Drawer>
   );
 }

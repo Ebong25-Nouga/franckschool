@@ -4,33 +4,32 @@ import { Link } from 'react-router-dom';
 
 export default function MotDePasseOublie() {
   const [envoye, setEnvoye] = useState(false);
-  const [email, setEmail] = useState('');
+  const [id, setId] = useState('');
   const soumettre = (e: FormEvent) => {
     e.preventDefault();
-    if (email) setEnvoye(true);
+    if (id.trim()) setEnvoye(true);
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-card">
+    <div className="seyes-clair flex min-h-dvh items-center justify-center bg-papier px-5">
+      <div className="w-full max-w-[420px] rounded-[22px] bg-white p-8 shadow-leve">
         <img src="/logo.svg" alt="" className="size-10" />
         {envoye ? (
-          <div role="status" className="mt-6">
-            <MailCheck className="size-8 text-emerald-600" aria-hidden />
-            <h1 className="mt-3 text-xl font-bold text-slate-900">Vérifiez votre messagerie</h1>
-            {/* Même message que le compte existe ou non */}
-            <p className="mt-2 text-sm text-slate-600">Si un compte correspond à cet identifiant, vous recevrez un lien pour choisir un nouveau mot de passe.</p>
+          <div role="status" className="mt-7">
+            <span className="grid size-12 place-items-center rounded-2xl bg-valide-50 text-valide"><MailCheck className="size-6" aria-hidden /></span>
+            <h1 className="mt-5 font-display text-2xl font-bold tracking-[-0.02em]">Lien envoyé</h1>
+            <p className="mt-2 text-encre-doux">Si un compte correspond à « {id} », un lien pour choisir un nouveau mot de passe vient de partir. Il reste valable 60 minutes.</p>
           </div>
         ) : (
-          <form onSubmit={soumettre} className="mt-6">
-            <h1 className="text-xl font-bold text-slate-900">Mot de passe oublié</h1>
-            <p className="mt-1.5 text-sm text-slate-500">Indiquez votre e-mail ou votre téléphone. Nous vous enverrons un lien de réinitialisation.</p>
-            <label htmlFor="id" className="field-label mt-6">Adresse e-mail ou téléphone</label>
-            <input id="id" value={email} onChange={(e) => setEmail(e.target.value)} className="field-input" autoComplete="username" required />
-            <button className="mt-5 min-h-11 w-full cursor-pointer rounded-lg bg-brand-800 text-sm font-semibold text-white transition-colors hover:bg-brand-900">Envoyer le lien</button>
+          <form onSubmit={soumettre} className="mt-7">
+            <h1 className="font-display text-2xl font-bold tracking-[-0.02em]">Mot de passe oublié</h1>
+            <p className="mt-2 text-encre-doux">Indiquez l’e-mail ou le téléphone de votre compte. Vous recevrez un lien de réinitialisation.</p>
+            <label htmlFor="id" className="field-label mt-7">E-mail ou téléphone</label>
+            <input id="id" value={id} onChange={(e) => setId(e.target.value)} className="field-input" autoComplete="username" required />
+            <button className="mt-5 min-h-12 w-full cursor-pointer rounded-[10px] bg-brand-700 font-semibold text-white shadow-encre transition-colors hover:bg-brand-800">Envoyer le lien</button>
           </form>
         )}
-        <Link to="/connexion" className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-brand-800 hover:underline">
+        <Link to="/connexion" className="mt-7 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline">
           <ArrowLeft className="size-4" aria-hidden /> Retour à la connexion
         </Link>
       </div>

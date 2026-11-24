@@ -1,150 +1,171 @@
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, Banknote, ClipboardCheck, GraduationCap, Layers, Plus, Receipt, UserCheck, UserPlus } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ArrowRight, Banknote, CalendarX2, ClipboardCheck, GraduationCap, Lock, Plus, UserPlus, Undo2, Wallet } from 'lucide-react';
+import { useState } from 'react';
+import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Link } from 'react-router-dom';
 import { peut, useAuth } from '../../auth';
-import { Badge, Card, CardHeader, PageHeader, StatCard } from '../../components/ui';
-import { activites, demandesRemboursement, encaissementsMensuels, fcfa } from '../../data/demo';
-
-const saisies = [
-  { classe: '6ème A', matiere: 'Français', prof: 'Mme NGO BASSA', etat: 'validee' },
-  { classe: '3ème A', matiere: 'Mathématiques', prof: 'M. ESSOMBA', etat: 'soumise' },
-  { classe: 'Tle C', matiere: 'Physique-Chimie', prof: 'M. FOTSO', etat: 'brouillon' },
-  { classe: '4ème A', matiere: 'Anglais', prof: 'Mme ABENA', etat: 'soumise' },
-];
-const etatNote = { validee: ['green', 'Validée'], soumise: ['amber', 'À valider'], brouillon: ['slate', 'En saisie'] } as const;
+import { EncaissementModal, InscriptionModal } from '../../components/Actions';
+import { Avatar, Button, Figure, Gauge, PageHeader, Panel, PanelHead, SequenceRail } from '../../components/ui';
+import { activites, avancementSaisie, encaissementsMensuels, repartitionModes } from '../../data/demo';
 
 export default function TableauDeBord() {
   const { session } = useAuth();
   const admin = session?.espace === 'admin';
-  const enAttente = demandesRemboursement.filter((d) => d.statut === 'en_attente');
+  const [modal, setModal] = useState<'paiement' | 'inscription' | null>(null);
+
+  const aTraiter = [
+    admin && { to: '/etablissement/remboursements', icon: Undo2, titre: '2 demandes de remboursement', detail: '40 000 FCFA attendent votre décision' },
+    peut(session, 'notes') && { to: '/etablissement/notes', icon: ClipboardCheck, titre: '2 évaluations à valider', detail: 'Mathématiques 3ème A, Anglais 4ème A' },
+    peut(session, 'caisse') && { to: '/etablissement/caisse', icon: Lock, titre: 'Caisse non clôturée depuis 3 jours', detail: 'Dernière clôture le 21 novembre' },
+    peut(session, 'absences') && { to: '/etablissement/absences', icon: CalendarX2, titre: '3 absences à traiter', detail: 'Dont 1 justificatif à vérifier' },
+  ].filter(Boolean) as { to: string; icon: typeof Undo2; titre: string; detail: string }[];
 
   return (
     <>
       <PageHeader
+        kicker="Lundi 24 novembre 2026"
         title={`Bonjour, ${session?.nom.split(' ')[0]}`}
-        subtitle="Voici la situation de l’établissement aujourd’hui."
         actions={
           <>
-            {peut(session, 'eleves') && (
-              <Link to="/etablissement/eleves" className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                <UserPlus className="size-4" aria-hidden /> Inscrire un élève
-              </Link>
-            )}
-            {peut(session, 'caisse') && (
-              <Link to="/etablissement/caisse" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-800 px-4 text-sm font-semibold text-white shadow-sm hover:bg-brand-900">
-                <Plus className="size-4" aria-hidden /> Encaisser un paiement
-              </Link>
-            )}
+            {peut(session, 'eleves') && <Button variant="secondary" icon={UserPlus} onClick={() => setModal('inscription')}>Inscrire un élève</Button>}
+            {peut(session, 'caisse') && <Button icon={Plus} onClick={() => setModal('paiement')}>Encaisser un paiement</Button>}
           </>
         }
       />
 
-      {admin && enAttente.length > 0 && (
-        <Link to="/etablissement/remboursements" className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 transition-colors hover:bg-amber-100">
-          <AlertTriangle className="size-5 shrink-0 text-amber-600" aria-hidden />
-          <span className="flex-1">
-            <strong>{enAttente.length} demandes de remboursement</strong> attendent votre décision ({fcfa(enAttente.reduce((s, d) => s + d.montant, 0))}).
-          </span>
-          <span className="font-semibold underline-offset-2 hover:underline">Examiner</span>
-        </Link>
-      )}
+      {/* Bandeau signature : l'année scolaire et ce qui attend une action */}
+      <section className="seyes relative overflow-hidden rounded-[22px] bg-brand-950 text-white shadow-leve">
+        <div aria-hidden className="absolute -right-24 -top-24 size-[420px] rounded-full bg-brand-600/35 blur-[90px]" />
+        <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+          <div>
+            <p className="text-sm font-medium text-brand-200">Année scolaire 2026-2027</p>
+            <h2 className="mt-1 font-display text-[28px] font-bold leading-tight tracking-[-0.03em]">Séquence 2, encore 11 jours de saisie</h2>
+            <p className="mt-2 max-w-md text-sm text-brand-200">64 % des notes de la séquence sont saisies. Les bulletins du 1er trimestre pourront être générés après le 5 décembre.</p>
+            <div className="mt-6">
+              <SequenceRail dark />
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">À traiter</p>
+            <ul className="mt-3 space-y-2">
+              {aTraiter.map((t) => (
+                <li key={t.to}>
+                  <Link to={t.to} className="group flex items-center gap-3 rounded-xl bg-white/[0.07] px-3.5 py-3 ring-1 ring-inset ring-white/10 transition-colors hover:bg-white/[0.12]">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-feutre text-encre">
+                      <t.icon className="size-[18px]" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold">{t.titre}</span>
+                      <span className="block truncate text-xs text-brand-200">{t.detail}</span>
+                    </span>
+                    <ArrowRight className="size-4 text-brand-300 transition-transform group-hover:translate-x-0.5 group-hover:text-white" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Élèves inscrits" value="842" icon={GraduationCap} hint={<span><span className="font-semibold text-emerald-700">+37</span> nouveaux cette année</span>} />
-        <StatCard label="Professeurs" value="38" icon={UserCheck} tone="slate" hint="24 permanents · 14 vacataires" />
-        <StatCard label="Classes" value="22" icon={Layers} tone="slate" hint="Taux de remplissage : 91 %" />
-        <StatCard label="Recouvrement scolarité" value="78 %" icon={Banknote} tone="green" hint={<span>Reste à percevoir : <strong className="text-slate-700">{fcfa(27_450_000)}</strong></span>} />
-      </div>
+      {/* Chiffres clés, dans une seule bande */}
+      <Panel className="mt-6 grid divide-y divide-papier-ligne/70 sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4 xl:divide-x">
+        <div className="p-6"><Figure icon={GraduationCap} label="Élèves inscrits" value="842" detail={<><b className="text-valide">+37</b> nouveaux, 19 redoublants</>} /></div>
+        <div className="border-papier-ligne/70 p-6 sm:border-l xl:border-l-0">
+          <Figure icon={Wallet} label="Scolarité recouvrée" value="78" unit="%" detail={<Gauge value={78} label="Taux de recouvrement" showValue={false} className="mt-1" />} />
+        </div>
+        <div className="p-6"><Figure icon={Banknote} label="Encaissé en novembre" value="7,9" unit="M FCFA" detail="Dont 31 % par MTN MoMo" /></div>
+        <div className="border-papier-ligne/70 p-6 sm:border-l xl:border-l-0"><Figure icon={Banknote} label="Reste à percevoir" value="27,4" unit="M FCFA" tone="stylo" detail="186 élèves concernés" /></div>
+      </Panel>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+        <Panel>
+          <PanelHead
             title="Recettes et dépenses"
-            subtitle="En millions de FCFA, année 2026-2027"
+            hint="En millions de FCFA, depuis la rentrée"
             action={
-              <div className="flex gap-4 text-xs text-slate-600">
-                <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-brand-700" /> Recettes</span>
-                <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-amber-400" /> Dépenses</span>
+              <div className="flex gap-4 text-xs font-medium text-encre-doux">
+                <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-brand-600" /> Recettes</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-stylo" /> Dépenses</span>
               </div>
             }
           />
-          <div className="h-72 px-2 py-4" role="img" aria-label="Graphique : recettes 6,4 M en septembre, 4,8 M en octobre, 3,9 M en novembre ; dépenses 2,1 M, 2,6 M et 1,8 M.">
+          <div className="h-[260px] px-3 pb-4" role="img" aria-label="Recettes : 18,4 M en septembre, 11,8 M en octobre, 7,9 M en novembre. Dépenses : 4,1 M, 4,6 M, 3,2 M.">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={encaissementsMensuels} barGap={6}>
-                <CartesianGrid vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="mois" tickLine={false} axisLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#64748B', fontSize: 12 }} width={32} />
-                <Tooltip cursor={{ fill: 'rgb(var(--brand-50))' }} formatter={(v: number) => `${v.toLocaleString('fr-FR')} M FCFA`} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0' }} />
-                <Bar dataKey="recettes" name="Recettes" fill="rgb(var(--brand-700))" radius={[4, 4, 0, 0]} maxBarSize={36} />
-                <Bar dataKey="depenses" name="Dépenses" fill="#FBBF24" radius={[4, 4, 0, 0]} maxBarSize={36} />
-              </BarChart>
+              <AreaChart data={encaissementsMensuels} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gRec" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="rgb(var(--brand-600))" stopOpacity={0.28} /><stop offset="100%" stopColor="rgb(var(--brand-600))" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gDep" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#D0263A" stopOpacity={0.16} /><stop offset="100%" stopColor="#D0263A" stopOpacity={0} /></linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#E4E9F3" strokeDasharray="3 4" />
+                <XAxis dataKey="mois" tickLine={false} axisLine={false} tick={{ fill: '#4A5578', fontSize: 12 }} dy={6} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: '#8790AD', fontSize: 12 }} width={30} />
+                <Tooltip formatter={(v: number) => `${v.toLocaleString('fr-FR')} M FCFA`} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 12px 32px -12px rgba(14,21,51,.3)', fontSize: 13 }} />
+                <Area type="monotone" dataKey="recettes" name="Recettes" stroke="rgb(var(--brand-600))" strokeWidth={2.5} fill="url(#gRec)" dot={{ r: 3.5, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} connectNulls={false} />
+                <Area type="monotone" dataKey="depenses" name="Dépenses" stroke="#D0263A" strokeWidth={2} fill="url(#gDep)" dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} connectNulls={false} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
-        </Card>
+        </Panel>
 
-        <Card>
-          <CardHeader title="Caisse du jour" subtitle="Lundi 24 novembre 2026" />
-          <dl className="divide-y divide-slate-100 px-5">
-            {[
-              ['Entrées espèces', 25000, true],
-              ['Entrées Mobile Money', 50000, true],
-              ['Sorties', 0, false],
-            ].map(([l, v, plus]) => (
-              <div key={l as string} className="flex items-center justify-between py-3.5 text-sm">
-                <dt className="flex items-center gap-2 text-slate-600">
-                  {plus ? <ArrowUpRight className="size-4 text-emerald-600" aria-hidden /> : <ArrowDownRight className="size-4 text-red-500" aria-hidden />}
-                  {l}
-                </dt>
-                <dd className="font-semibold tabular-nums text-slate-900">{fcfa(v as number)}</dd>
+        <Panel>
+          <PanelHead title="Comment les parents paient" hint="Part des encaissements, novembre" />
+          <div className="flex items-center gap-6 px-6 pb-6">
+            <div className="relative size-[150px] shrink-0" role="img" aria-label="Espèces 46 %, MTN MoMo 31 %, Orange Money 17 %, Banque 6 %">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={repartitionModes} dataKey="part" nameKey="mode" innerRadius={50} outerRadius={72} paddingAngle={2} stroke="none" startAngle={90} endAngle={-270}>
+                    {repartitionModes.map((m) => <Cell key={m.mode} fill={m.couleur} />)}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 grid place-items-center text-center">
+                <div><p className="font-display text-xl font-bold leading-none">54 %</p><p className="mt-1 text-[11px] text-encre-doux">électronique</p></div>
               </div>
-            ))}
-            <div className="flex items-center justify-between py-4">
-              <dt className="text-sm font-semibold text-slate-900">Solde du jour</dt>
-              <dd className="text-lg font-bold tabular-nums text-brand-800">{fcfa(75000)}</dd>
             </div>
-          </dl>
-          <div className="border-t border-slate-100 p-4">
-            <Link to="/etablissement/caisse" className="flex min-h-10 items-center justify-center gap-2 rounded-lg bg-slate-100 text-sm font-semibold text-slate-700 hover:bg-slate-200">
-              <Receipt className="size-4" aria-hidden /> Voir le journal de caisse
-            </Link>
+            <ul className="min-w-0 flex-1 space-y-2.5">
+              {repartitionModes.map((m) => (
+                <li key={m.mode} className="flex items-center gap-2.5 text-sm">
+                  <span className="size-2.5 shrink-0 rounded-sm" style={{ background: m.couleur }} aria-hidden />
+                  <span className="flex-1 truncate text-encre-doux">{m.mode}</span>
+                  <span className="font-semibold chiffres">{m.part} %</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        </Card>
+        </Panel>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader title="Saisie des notes — Séquence 2" subtitle="Avancement par classe et matière" action={<ClipboardCheck className="size-5 text-slate-400" aria-hidden />} />
-          <ul className="divide-y divide-slate-100">
-            {saisies.map((s) => {
-              const [tone, label] = etatNote[s.etat as keyof typeof etatNote];
-              return (
-                <li key={s.classe + s.matiere} className="flex items-center justify-between gap-3 px-5 py-3.5">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">{s.classe} · {s.matiere}</p>
-                    <p className="text-xs text-slate-500">{s.prof}</p>
-                  </div>
-                  <Badge tone={tone}>{label}</Badge>
-                </li>
-              );
-            })}
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1.1fr]">
+        <Panel>
+          <PanelHead title="Saisie des notes, séquence 2" hint="Matières dont les notes sont soumises, par classe" action={<Link to="/etablissement/notes" className="text-sm font-semibold text-brand-700 hover:underline">Valider</Link>} />
+          <ul className="space-y-3.5 px-6 pb-6 pt-1">
+            {avancementSaisie.map((c) => (
+              <li key={c.classe} className="grid grid-cols-[4.5rem_1fr_3rem] items-center gap-3 text-sm">
+                <span className="font-semibold">{c.classe}</span>
+                <Gauge value={(c.fait / c.total) * 100} label={`Saisie ${c.classe}`} showValue={false} />
+                <span className="text-right text-xs font-semibold text-encre-doux chiffres">{c.fait}/{c.total}</span>
+              </li>
+            ))}
           </ul>
-        </Card>
+        </Panel>
 
-        <Card>
-          <CardHeader title="Activités récentes" subtitle="Journal des actions importantes" />
-          <ol className="space-y-0 px-5 py-2">
+        <Panel>
+          <PanelHead title="Dernières actions" hint="Qui a fait quoi, aujourd’hui et hier" />
+          <ol className="px-6 pb-5">
             {activites.map((a, i) => (
-              <li key={i} className="relative flex gap-3 py-3">
-                <span className="relative mt-1.5 flex size-2.5 shrink-0 rounded-full bg-brand-600 ring-4 ring-brand-50" aria-hidden />
-                <div className="min-w-0 text-sm">
-                  <p className="text-slate-700"><strong className="font-semibold text-slate-900">{a.qui}</strong> {a.quoi}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{a.quand}</p>
-                </div>
+              <li key={i} className="flex gap-3 border-t border-papier-ligne/60 py-3 first:border-t-0 first:pt-1">
+                <Avatar name={a.qui} size="sm" />
+                <p className="min-w-0 flex-1 text-sm leading-snug text-encre-doux">
+                  <b className="font-semibold text-encre">{a.qui}</b> {a.quoi}
+                </p>
+                <time className="shrink-0 text-xs text-encre-pale">{a.quand}</time>
               </li>
             ))}
           </ol>
-        </Card>
+        </Panel>
       </div>
+
+      {modal === 'paiement' && <EncaissementModal onClose={() => setModal(null)} />}
+      {modal === 'inscription' && <InscriptionModal onClose={() => setModal(null)} />}
     </>
   );
 }

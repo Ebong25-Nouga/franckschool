@@ -1,2 +1,3 @@
 /// <reference types="vite/client" />
-declare module '@fontsource-variable/plus-jakarta-sans';
+declare module '@fontsource-variable/bricolage-grotesque';
+declare module '@fontsource-variable/figtree';
