@@ -28,11 +28,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { ApercuDirection, ApercuEnseignant, ApercuParent, ApercuSecretariat, FenetreApp, MiniJournal } from './accueil/Apercus';
+import { PiedDePage, PretRentree } from './accueil/Fin';
 import { Tarifs } from './accueil/Tarifs';
 import { VideoPresentation } from './accueil/VideoPresentation';
 
@@ -415,42 +415,11 @@ export default function Accueil() {
           </div>
         </section>
 
-        {/* ===================== Appel final ===================== */}
-        <section className="bg-white py-24">
-          <div className="seyes relative mx-auto max-w-[1200px] overflow-hidden rounded-[32px] bg-brand-950 px-6 py-16 text-center text-white sm:px-12 sm:py-20">
-            <div aria-hidden className="absolute -left-24 -top-24 size-[420px] rounded-full bg-brand-600/40 blur-[110px]" />
-            <h2 className="relative mx-auto max-w-2xl font-display text-[34px] font-bold leading-[1.05] tracking-[-0.035em] sm:text-[46px]">Prêt pour la prochaine rentrée ?</h2>
-            <p className="relative mx-auto mt-5 max-w-xl text-lg text-brand-100/90">Nous vous montrons Franck School avec les classes, les matières et les frais de votre établissement.</p>
-            <div className="relative mt-9 flex flex-wrap justify-center gap-3">
-              <Button onClick={() => setDemo(true)} className="h-12 gap-2 bg-feutre px-6 text-[15px] font-semibold text-encre hover:bg-[#FFD93A]">
-                Demander une démonstration
-                <ArrowRight data-icon="inline-end" />
-              </Button>
-              <Button asChild variant="outline" className="h-12 border-white/25 bg-transparent px-6 text-[15px] font-semibold text-white hover:bg-white/10 hover:text-white">
-                <Link to="/connexion">Se connecter</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
+        {/* ===================== Prêt pour la rentrée ===================== */}
+        <PretRentree onDemo={() => setDemo(true)} />
       </main>
 
-      <footer className="border-t border-papier-ligne bg-white">
-        <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="" className="size-8" />
-            <div>
-              <p className="font-display font-extrabold">Franck School</p>
-              <p className="text-sm text-encre-doux">Gestion scolaire pour les établissements du Cameroun</p>
-            </div>
-          </div>
-          <nav aria-label="Liens de bas de page" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-encre-doux">
-            {liens.map((l) => <a key={l.href} href={l.href} className="hover:text-encre">{l.label}</a>)}
-            <Link to="/connexion" className="font-semibold text-brand-700 hover:underline">Se connecter</Link>
-          </nav>
-        </div>
-        <Separator />
-        <p className="mx-auto max-w-[1200px] px-5 py-5 text-[13px] text-encre-pale sm:px-8">© 2026 Franck School</p>
-      </footer>
+      <PiedDePage onDemo={() => setDemo(true)} />
 
       <DemandeDemo ouvert={demo} onChange={setDemo} />
     </div>
