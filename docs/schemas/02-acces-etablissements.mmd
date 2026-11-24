@@ -1,0 +1,11 @@
+erDiagram
+    etablissements ||--|| parametres_etablissements : "a"
+    etablissements ||--o{ etablissement_utilisateurs : "emploie"
+    utilisateurs ||--o{ etablissement_utilisateurs : "appartient"
+    etablissements ||--o{ roles : "définit"
+    roles ||--o{ role_permissions : "accorde"
+    permissions ||--o{ role_permissions : "incluse"
+    utilisateurs ||--o{ utilisateur_roles : "reçoit"
+    roles ||--o{ utilisateur_roles : "attribué"
+    utilisateurs ||--o{ utilisateur_permissions : "reçoit"
+    permissions ||--o{ utilisateur_permissions : "attribuée"

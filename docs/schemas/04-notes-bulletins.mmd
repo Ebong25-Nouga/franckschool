@@ -1,0 +1,10 @@
+erDiagram
+    matieres ||--o{ evaluations : "évaluée par"
+    periodes_scolaires ||--o{ evaluations : "pendant"
+    evaluations ||--o{ notes : "contient"
+    inscriptions ||--o{ notes : "obtient"
+    notes ||--o{ historique_notes : "corrections"
+    inscriptions ||--o{ bulletins : "reçoit"
+    periodes_scolaires ||--o{ bulletins : "pour"
+    bulletins ||--o{ bulletin_lignes : "détaille"
+    bulletins |o--o| bulletins : "remplacé par"

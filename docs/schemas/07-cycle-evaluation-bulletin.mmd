@@ -1,0 +1,8 @@
+flowchart LR
+    B["Brouillon<br/>le professeur saisit"] --> S["Soumise"]
+    S -->|Validation| V["Validée"]
+    S -->|Rejet avec motif| B
+    V --> L["Verrouillée<br/>séquence close"]
+    L --> G["Bulletin généré<br/>version 1, publié"]
+    L -.->|Correction autorisée<br/>+ historique_notes| C["Note corrigée"]
+    C --> G2["Nouvelle version du bulletin<br/>l'ancienne passe à « remplacé »"]

@@ -1,0 +1,11 @@
+flowchart TD
+    A["Secrétaire prépare la demande"]
+    B["Envoi à l'administrateur"]
+    C{"Décision de l'administrateur"}
+    D["Demande refusée<br/>Aucun mouvement financier"]
+    E["Demande approuvée"]
+    F["La secrétaire effectue le remboursement"]
+    G["Transaction enregistrée et historisée"]
+    A --> B --> C
+    C -->|Refus| D
+    C -->|Approbation| E --> F --> G

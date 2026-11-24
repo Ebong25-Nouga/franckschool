@@ -1,0 +1,11 @@
+flowchart LR
+    E["Établissements"] --> ACC["Accès<br/>utilisateurs, rôles, permissions"]
+    E --> AN["Années et périodes"]
+    AN --> PED["Pédagogie<br/>classes, matières, professeurs,<br/>emplois du temps"]
+    E --> SCO["Scolarité<br/>élèves, tuteurs, inscriptions"]
+    PED --> NOT["Notes et bulletins"]
+    SCO --> NOT
+    SCO --> CAI["Caisse<br/>frais, paiements, reçus,<br/>remboursements, clôtures"]
+    SCO --> VIE["Vie scolaire<br/>absences et retards"]
+    ACC --> TRA["Traçabilité<br/>journal, notifications"]
+    E --> SAAS["SaaS<br/>abonnements"]
