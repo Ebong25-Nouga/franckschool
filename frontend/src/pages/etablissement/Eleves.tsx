@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Banknote, Download, FileBadge2, MoreHorizontal, Pencil, Phone, SearchX, UserPlus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { EncaissementModal, InscriptionModal } from '../../components/Actions';
-import { Avatar, Button, Drawer, EmptyState, Gauge, Grade, IconButton, PageHeader, Panel, Pill, SearchInput, Segmented, Select, Table, Td, useToast } from '../../components/ui';
+import { Avatar, Button, Drawer, EmptyState, Gauge, Grade, IconButton, PageHeader, Panel, Pill, SearchInput, Segmented, Select, Table, Td, useToast } from '../../components/kit';
 import { appreciation, classes, eleves, fcfa, matieresClasse, type Eleve } from '../../data/demo';
 
 const statutTone = { nouveau: 'encre', ancien: 'neutre', redoublant: 'orange' } as const;

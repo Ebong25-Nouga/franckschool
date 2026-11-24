@@ -31,7 +31,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { peut, useAuth, type Session } from '../auth';
 import { ecole, notifications } from '../data/demo';
-import { Avatar } from './ui';
+import { Avatar } from './kit';
 
 interface Item {
   to: string;

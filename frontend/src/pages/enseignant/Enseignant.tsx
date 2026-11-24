@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { AlertCircle, ArrowRight, Check, CheckCheck, Clock, MapPin, Send, Star } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Avatar, Button, Grade, PageHeader, Panel, PanelHead, Pill, Segmented, SequenceRail, Table, Td, useToast } from '../../components/ui';
+import { Avatar, Button, Grade, PageHeader, Panel, PanelHead, Pill, Segmented, SequenceRail, Table, Td, useToast } from '../../components/kit';
 import { appreciation, eleves, emploiDuTemps, note } from '../../data/demo';
 
 const mesClasses = [

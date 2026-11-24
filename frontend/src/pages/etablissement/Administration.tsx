@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Check, KeyRound, ShieldCheck, Upload, UserPlus } from 'lucide-react';
 import { useState } from 'react';
-import { Avatar, Button, Modal, PageHeader, Panel, PanelHead, Pill, SequenceRail, useToast } from '../../components/ui';
+import { Avatar, Button, Modal, PageHeader, Panel, PanelHead, Pill, SequenceRail, useToast } from '../../components/kit';
 import { ecole } from '../../data/demo';
 
 /* =========================================================

@@ -1,7 +1,7 @@
 import { Building2, CreditCard, MoreHorizontal, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Button, Figure, Gauge, IconButton, PageHeader, Panel, PanelHead, Pill, Segmented, Table, Td } from '../../components/ui';
+import { Button, Figure, Gauge, IconButton, PageHeader, Panel, PanelHead, Pill, Segmented, Table, Td } from '../../components/kit';
 import { etablissements, journalPlateforme } from '../../data/demo';
 
 const statutTone = { actif: 'valide', essai: 'encre', suspendu: 'stylo' } as const;

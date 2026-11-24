@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Check, Copy, Download, Mail, MapPin, Phone, Receipt, Smartphone } from 'lucide-react';
 import { useState } from 'react';
-import { Avatar, Button, Gauge, PageHeader, Panel, PanelHead, Pill, useToast } from '../../components/ui';
+import { Avatar, Button, Gauge, PageHeader, Panel, PanelHead, Pill, useToast } from '../../components/kit';
 import { ecole, fcfa } from '../../data/demo';
 
 const enfants = [

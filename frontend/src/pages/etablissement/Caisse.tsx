@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { ArrowDownLeft, ArrowUpRight, Banknote, FileDown, Lock, Minus, Plus, Printer, Smartphone, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { EncaissementModal } from '../../components/Actions';
-import { Avatar, Button, Gauge, IconButton, Modal, PageHeader, Panel, Pill, Segmented, Select, Table, Td, useToast } from '../../components/ui';
+import { Avatar, Button, Gauge, IconButton, Modal, PageHeader, Panel, Pill, Segmented, Select, Table, Td, useToast } from '../../components/kit';
 import { eleves, fcfa, transactions, type Transaction } from '../../data/demo';
 
 const typeInfo = {

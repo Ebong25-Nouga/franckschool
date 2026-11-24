@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Banknote, Building, Check, CheckCircle2, Printer, Smartphone } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { classes, eleves, fcfa, tranches, type Eleve } from '../data/demo';
-import { Avatar, Button, Modal, SearchInput, useToast } from './ui';
+import { Avatar, Button, Modal, SearchInput, useToast } from './kit';
 
 /* =========================================================
  * Encaisser un paiement

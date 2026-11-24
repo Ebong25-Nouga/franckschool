@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Check, Plus, Send, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../auth';
-import { Avatar, Button, Modal, PageHeader, Panel, Pill, Segmented, useToast } from '../../components/ui';
+import { Avatar, Button, Modal, PageHeader, Panel, Pill, Segmented, useToast } from '../../components/kit';
 import { demandesRemboursement, eleves, fcfa } from '../../data/demo';
 
 type Statut = 'en_attente' | 'approuvee' | 'refusee' | 'executee';

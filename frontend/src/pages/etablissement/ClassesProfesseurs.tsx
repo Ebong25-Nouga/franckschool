@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Clock, Phone, Plus, Star } from 'lucide-react';
 import { useState } from 'react';
-import { Avatar, Button, Gauge, PageHeader, Panel, Pill, Segmented, Table, Td, useToast } from '../../components/ui';
+import { Avatar, Button, Gauge, PageHeader, Panel, Pill, Segmented, Table, Td, useToast } from '../../components/kit';
 import { classes, effectifs, matieresClasse, professeurs } from '../../data/demo';
 
 export function Classes() {

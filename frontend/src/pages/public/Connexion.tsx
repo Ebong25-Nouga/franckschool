@@ -2,7 +2,7 @@ import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { accueilParEspace, comptesDemo, useAuth } from '../../auth';
-import { Avatar, SequenceRail } from '../../components/ui';
+import { Avatar, SequenceRail } from '../../components/kit';
 
 const demo = import.meta.env.DEV || import.meta.env.VITE_DEMO === 'true';
 

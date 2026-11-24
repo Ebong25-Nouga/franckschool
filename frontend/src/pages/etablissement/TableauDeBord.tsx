@@ -4,7 +4,7 @@ import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContaine
 import { Link } from 'react-router-dom';
 import { peut, useAuth } from '../../auth';
 import { EncaissementModal, InscriptionModal } from '../../components/Actions';
-import { Avatar, Button, Figure, Gauge, PageHeader, Panel, PanelHead, SequenceRail } from '../../components/ui';
+import { Avatar, Button, Figure, Gauge, PageHeader, Panel, PanelHead, SequenceRail } from '../../components/kit';
 import { activites, avancementSaisie, encaissementsMensuels, repartitionModes } from '../../data/demo';
 
 export default function TableauDeBord() {

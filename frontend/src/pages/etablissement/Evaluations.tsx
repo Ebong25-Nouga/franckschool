@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Check, Download, Eye, FileBadge2, Lock, RotateCcw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import { Avatar, Button, Grade, Modal, PageHeader, Panel, Pill, Segmented, SequenceRail, Select, Table, Td, useToast } from '../../components/ui';
+import { Avatar, Button, Grade, Modal, PageHeader, Panel, Pill, Segmented, SequenceRail, Select, Table, Td, useToast } from '../../components/kit';
 import { absences as donneesAbsences, appreciation, classes, ecole, eleves, evaluationsAValider, matieresClasse, note } from '../../data/demo';
 
 /* =========================================================
