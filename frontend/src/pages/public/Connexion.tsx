@@ -85,12 +85,12 @@ export default function Connexion() {
             </button>
           </form>
 
-          {import.meta.env.DEV && (
+          {(import.meta.env.DEV || import.meta.env.VITE_DEMO === 'true') && (
             <div className="mt-8 rounded-lg border border-dashed border-brand-300 bg-brand-50/60 p-4 text-sm">
               <p className="flex items-center gap-2 font-semibold text-brand-900">
                 <Info className="size-4" aria-hidden /> Comptes de démonstration
               </p>
-              <p className="mt-1 text-xs text-slate-600">Visible uniquement en développement. N’importe quel mot de passe.</p>
+              <p className="mt-1 text-xs text-slate-600">Version de démonstration : cliquez sur un compte, puis sur « Se connecter ». N’importe quel mot de passe.</p>
               <ul className="mt-3 space-y-1">
                 {Object.entries(comptesDemo).map(([mail, s]) => (
                   <li key={mail}>

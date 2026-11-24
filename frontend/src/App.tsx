@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, accueilParEspace, useAuth, type Espace } from './auth';
 import AppShell from './components/AppShell';
 import EnConstruction from './pages/EnConstruction';
@@ -25,10 +25,13 @@ function Protege({ espaces, children }: { espaces: Espace[]; children: ReactNode
 
 const bientot = (titre: string, texte = 'Cet écran sera construit dans une prochaine étape.') => <EnConstruction titre={titre} texte={texte} />;
 
+// La démo en ligne (page unique) utilise des adresses en « #/… »
+const Router = import.meta.env.VITE_ROUTER === 'hash' ? HashRouter : BrowserRouter;
+
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <Router>
         <Routes>
           {/* Interface 1 — Accueil public et authentification */}
           <Route path="/" element={<Accueil />} />
@@ -76,7 +79,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AuthProvider>
   );
 }
