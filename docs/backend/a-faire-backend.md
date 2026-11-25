@@ -50,3 +50,4 @@ Dernière mise à jour : 25/11/2026.
 | B19 | Demandes de correction : créées par l'administration, corrigées par l'enseignant concerné uniquement, justification conservée (`historique_notes`), validation par l'administration | Demandes de correction | 016 |
 | B20 | Calculs pour le titulaire : moyennes générales provisoires, moyennes par matière, état de saisie par matière, enseignants en retard | Ma classe principale | 016 |
 | B21 | Emploi du temps : fonctionnement à définir (actuellement provisoire, données d'exemple) | Emploi du temps | À définir |
+| B22 | Générer le PDF de l’emploi du temps de l’enseignant (bouton « Télécharger en PDF » déjà en place) | Emploi du temps | Demande du 25/11 |

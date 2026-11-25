@@ -6,6 +6,7 @@ import {
   BookMarked,
   Check,
   CheckCheck,
+  Download,
   ClipboardCheck,
   ClipboardPen,
   Clock,
@@ -636,13 +637,18 @@ const minutes = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3));
 
 export function EmploiDuTemps() {
   const { cle, titulaire } = useEnseignant();
+  const toast = useToast();
   const semaine = emploiEnseignant[cle];
   const debut = minutes('07:30');
   const fin = minutes('15:30');
   const px = 64 / 60;
   return (
     <>
-      <Titre titre="Emploi du temps" texte="Semaine du 24 au 28 novembre 2026." />
+      <Titre
+        titre="Emploi du temps"
+        texte="Semaine du 24 au 28 novembre 2026."
+        action={<Button icon={Download} onClick={() => toast('Emploi du temps téléchargé en PDF.')}>Télécharger en PDF</Button>}
+      />
       <p className="mb-5 flex items-start gap-2 rounded-xl bg-feutre-50 px-4 py-3 text-sm"><AlertCircle className="mt-0.5 size-4 shrink-0 text-feutre-700" aria-hidden />Emploi du temps provisoire, donné à titre d’exemple. Son fonctionnement sera défini plus tard.</p>
       {/* Téléphone : liste par jour */}
       <div className="flex flex-col gap-4 lg:hidden">
