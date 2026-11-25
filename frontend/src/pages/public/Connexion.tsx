@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { accueilParEspace, comptesDemo, useAuth } from '../../auth';
@@ -21,7 +21,7 @@ export default function Connexion() {
       const s = connexion(mail);
       setEnvoi(false);
       if (!s) {
-        setErreur('Identifiant ou mot de passe incorrect. Vérifiez les deux champs, ou demandez un nouveau mot de passe.');
+        setErreur('Identifiant ou mot de passe incorrect. Vérifiez votre saisie, ou cliquez sur « Mot de passe oublié ».');
         return;
       }
       nav(accueilParEspace[s.espace]);
@@ -32,7 +32,7 @@ export default function Connexion() {
     e.preventDefault();
     setErreur('');
     if (!email.trim() || !mdp) {
-      setErreur('Renseignez votre identifiant et votre mot de passe.');
+      setErreur('Saisissez votre e-mail ou téléphone, puis votre mot de passe.');
       return;
     }
     entrer(email);
@@ -42,28 +42,31 @@ export default function Connexion() {
     <div className="grid min-h-dvh bg-white lg:grid-cols-[1fr_1.05fr]">
       <aside className="seyes relative hidden flex-col justify-between overflow-hidden bg-brand-950 p-12 text-white lg:flex">
         <div aria-hidden className="absolute -right-40 -top-32 size-[560px] rounded-full bg-brand-700/45 blur-[110px]" />
-        <Link to="/" className="relative flex items-center gap-3">
-          <img src="/logo.svg" alt="" className="size-10 rounded-xl shadow-[0_0_0_1px_rgb(255_255_255/0.15)]" />
-          <span className="font-display text-lg font-extrabold">Franck School</span>
+        <Link to="/" className="relative flex items-center gap-4" aria-label="Franck School, retour à l’accueil">
+          <img src="/logo.svg" alt="" className="size-16 rounded-2xl shadow-[0_0_0_1px_rgb(255_255_255/0.15),0_12px_30px_-10px_rgb(0_0_0/0.5)]" />
+          <span className="font-display text-[28px] font-extrabold tracking-[-0.02em]">Franck School</span>
         </Link>
         <div className="relative max-w-md">
-          <p className="font-display text-[38px] font-bold leading-[1.05] tracking-[-0.03em]">Séquence 2 en cours.</p>
-          <p className="mt-3 text-brand-200">64 % des notes sont déjà saisies. Les compositions se terminent le 5 décembre.</p>
+          <p className="font-display text-[42px] font-bold leading-[1.03] tracking-[-0.035em]">Votre école, partout avec vous.</p>
+          <p className="mt-4 text-[17px] leading-relaxed text-brand-200">Au bureau, en salle des professeurs ou à la maison : connectez-vous et retrouvez votre espace là où vous l’avez laissé.</p>
           <div className="mt-8">
             <SequenceRail dark />
           </div>
         </div>
-        <p className="relative text-sm text-brand-300">Année scolaire 2026-2027</p>
+        <p className="relative text-sm text-brand-300">Année scolaire 2026-2027 · séquence 2 en cours</p>
       </aside>
 
       <div className="flex items-center justify-center px-5 py-12 sm:px-10">
         <div className="w-full max-w-[400px]">
-          <Link to="/" className="mb-10 flex items-center gap-2.5 lg:hidden">
-            <img src="/logo.svg" alt="" className="size-9" />
-            <span className="font-display text-lg font-extrabold">Franck School</span>
+          <Link to="/" className="mb-10 inline-flex items-center gap-1.5 text-sm font-semibold text-encre-doux transition-colors hover:text-brand-700">
+            <ArrowLeft className="size-4" aria-hidden /> Retour à l’accueil
           </Link>
-          <h1 className="font-display text-[32px] font-bold tracking-[-0.03em]">Bon retour.</h1>
-          <p className="mt-2 text-encre-doux">Connectez-vous avec les identifiants remis par votre établissement.</p>
+          <Link to="/" className="mb-8 flex items-center gap-3 lg:hidden" aria-label="Franck School, accueil">
+            <img src="/logo.svg" alt="" className="size-14 rounded-2xl" />
+            <span className="font-display text-2xl font-extrabold tracking-[-0.02em]">Franck School</span>
+          </Link>
+          <h1 className="font-display text-[34px] font-bold leading-tight tracking-[-0.03em]">Connexion à votre espace</h1>
+          <p className="mt-2 text-encre-doux">Utilisez l’e-mail ou le numéro de téléphone enregistré par votre établissement.</p>
 
           <form onSubmit={soumettre} className="mt-9 space-y-5" noValidate>
             {erreur && (
@@ -74,7 +77,7 @@ export default function Connexion() {
             )}
             <div>
               <label htmlFor="email" className="field-label">E-mail ou téléphone</label>
-              <input id="email" type="text" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className="field-input" placeholder="nom@ecole.cm" />
+              <input id="email" type="text" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className="field-input" placeholder="nom@ecole.cm ou 6XX XX XX XX" />
             </div>
             <div>
               <div className="flex items-baseline justify-between">
@@ -90,7 +93,7 @@ export default function Connexion() {
             </div>
             <button type="submit" disabled={envoi} className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] bg-brand-700 font-semibold text-white shadow-encre transition-colors hover:bg-brand-800 disabled:opacity-60">
               {envoi ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-              {envoi ? 'Connexion…' : 'Se connecter'}
+              {envoi ? 'Connexion en cours…' : 'Accéder à mon espace'}
             </button>
           </form>
 
@@ -98,7 +101,7 @@ export default function Connexion() {
             <section className="mt-10" aria-labelledby="demo-titre">
               <div className="flex items-center gap-3">
                 <span className="h-px flex-1 bg-papier-ligne" />
-                <h2 id="demo-titre" className="text-[13px] font-semibold text-encre-doux">Démonstration : entrer directement</h2>
+                <h2 id="demo-titre" className="text-[13px] font-semibold text-encre-doux">Comptes de test</h2>
                 <span className="h-px flex-1 bg-papier-ligne" />
               </div>
               <ul className="mt-4 grid gap-2">
