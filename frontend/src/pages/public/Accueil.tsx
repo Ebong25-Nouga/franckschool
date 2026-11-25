@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { versSection } from '@/lib/defiler';
+import { placementFenetre, type PlacementFenetre } from '@/lib/fenetre';
 import { cn } from '@/lib/utils';
 import { ApercuDirection, ApercuEnseignant, ApercuParent, ApercuSecretariat, FenetreApp, MiniJournal } from './accueil/Apercus';
 import { PiedDePage, PretRentree } from './accueil/Fin';
@@ -432,6 +433,13 @@ export default function Accueil() {
  * Demande de démonstration
  * ------------------------------------------------------------- */
 function DemandeDemo({ ouvert, onChange }: { ouvert: boolean; onChange: (v: boolean) => void }) {
+  const [place, setPlace] = useState<PlacementFenetre>({ haut: null, hauteurMax: 800 });
+  // Recalculé à chaque ouverture, avant l'affichage
+  const [dernierOuvert, setDernierOuvert] = useState(false);
+  if (ouvert !== dernierOuvert) {
+    setDernierOuvert(ouvert);
+    if (ouvert) setPlace(placementFenetre());
+  }
   const [f, setF] = useState({ nom: '', ecole: '', ville: '', tel: '', taille: '' });
   const [essai, setEssai] = useState(false);
   const erreurs = {
@@ -454,7 +462,8 @@ function DemandeDemo({ ouvert, onChange }: { ouvert: boolean; onChange: (v: bool
   return (
     <Dialog open={ouvert} onOpenChange={onChange}>
       <DialogContent
-        className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:max-w-[520px] sm:p-6"
+        className="overflow-y-auto p-5 sm:max-w-[520px] sm:p-6"
+        style={{ maxHeight: place.hauteurMax, ...(place.haut !== null ? { top: place.haut, translate: '-50% 0' } : {}) }}
         onOpenAutoFocus={(e) => {
           // Sur téléphone, ne pas ouvrir le clavier tout de suite : il cacherait le formulaire
           if (window.innerWidth < 640) {

@@ -2,7 +2,9 @@ import clsx from 'clsx';
 import type { LucideIcon } from 'lucide-react';
 import { CheckCircle2, Search, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { note as fmtNote, sequences } from '../data/demo';
+import { placementFenetre } from '../lib/fenetre';
 
 /* =========================================================
  * Boutons
@@ -319,31 +321,47 @@ function useEscape(onClose: () => void) {
 
 export function Modal({ title, lead, onClose, children, footer, width = 'max-w-xl' }: { title: string; lead?: string; onClose: () => void; children: ReactNode; footer?: ReactNode; width?: string }) {
   useEscape(onClose);
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="modal-titre">
+  // Calculé une seule fois, à l'ouverture
+  const [place] = useState(placementFenetre);
+  const ancree = place.haut !== null;
+  // Rendue directement dans <body> : un parent animé (transform) décalerait la fenêtre
+  return createPortal(
+    <div className={clsx('fixed inset-0 z-50', !ancree && 'flex items-center justify-center p-4 sm:p-6')} role="dialog" aria-modal="true" aria-labelledby="modal-titre">
       <button className="absolute inset-0 cursor-default bg-encre/45 backdrop-blur-[2px]" aria-label="Fermer" tabIndex={-1} onClick={onClose} />
-      <div className={clsx('relative flex max-h-[92dvh] w-full animate-pop flex-col overflow-hidden rounded-t-2xl bg-white shadow-leve sm:rounded-2xl', width)}>
-        <header className="flex items-start justify-between gap-4 border-b border-papier-ligne/70 px-6 py-5">
-          <div>
+      <div
+        className={clsx('relative flex w-full animate-pop flex-col overflow-hidden rounded-2xl bg-white shadow-leve', width, ancree && 'absolute left-1/2 w-[calc(100%-2rem)] -translate-x-1/2')}
+        style={{ maxHeight: place.hauteurMax, ...(ancree ? { top: place.haut! } : {}) }}
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-papier-ligne/70 px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
             <h2 id="modal-titre" className="text-xl font-bold tracking-[-0.02em]">{title}</h2>
             {lead && <p className="mt-1 text-sm text-encre-doux">{lead}</p>}
           </div>
           <IconButton icon={X} label="Fermer" onClick={onClose} />
         </header>
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
-        {footer && <footer className="flex flex-wrap justify-end gap-2 border-t border-papier-ligne/70 bg-papier/60 px-6 py-4">{footer}</footer>}
+        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
+        {footer && <footer className="flex flex-wrap justify-end gap-2 border-t border-papier-ligne/70 bg-papier/60 px-5 py-4 sm:px-6">{footer}</footer>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 export function Drawer({ onClose, children, label }: { onClose: () => void; children: ReactNode; label: string }) {
   useEscape(onClose);
-  return (
+  const [place] = useState(placementFenetre);
+  const ancree = place.haut !== null;
+  return createPortal(
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={label}>
       <button className="absolute inset-0 cursor-default bg-encre/40 backdrop-blur-[2px]" aria-label="Fermer" tabIndex={-1} onClick={onClose} />
-      <div className="absolute inset-y-0 right-0 flex w-full max-w-[480px] animate-glisse flex-col bg-white shadow-leve">{children}</div>
-    </div>
+      <div
+        className={clsx('absolute right-0 flex w-full max-w-[480px] animate-glisse flex-col bg-white shadow-leve', ancree ? 'rounded-l-2xl' : 'inset-y-0')}
+        style={ancree ? { top: place.haut!, height: place.hauteurMax } : undefined}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
   );
 }
 
