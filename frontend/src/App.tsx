@@ -38,6 +38,7 @@ export default function App() {
             <Route path="/" element={<Accueil />} />
             <Route path="/connexion" element={<Connexion />} />
             <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
+            <Route path="/reinitialiser" element={<MotDePasseOublie key="lien" depuisLien />} />
 
             {/* Interface 2 — Administration centrale */}
             <Route element={<Protege espaces={['super']}><AppShell /></Protege>}>

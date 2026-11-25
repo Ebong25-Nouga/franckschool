@@ -1,8 +1,9 @@
-import { AlertCircle, ArrowLeft, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { CadreAuth } from './CadreAuth';
 import { accueilParEspace, comptesDemo, useAuth } from '../../auth';
-import { Avatar, SequenceRail } from '../../components/kit';
+import { Avatar } from '../../components/kit';
 
 const demo = import.meta.env.DEV || import.meta.env.VITE_DEMO === 'true';
 
@@ -39,32 +40,7 @@ export default function Connexion() {
   };
 
   return (
-    <div className="grid min-h-dvh bg-white lg:grid-cols-[1fr_1.05fr]">
-      <aside className="seyes relative hidden flex-col justify-between overflow-hidden bg-brand-950 p-12 text-white lg:flex">
-        <div aria-hidden className="absolute -right-40 -top-32 size-[560px] rounded-full bg-brand-700/45 blur-[110px]" />
-        <Link to="/" className="relative flex items-center gap-4" aria-label="Franck School, retour à l’accueil">
-          <img src="/logo.svg" alt="" className="size-16 rounded-2xl shadow-[0_0_0_1px_rgb(255_255_255/0.15),0_12px_30px_-10px_rgb(0_0_0/0.5)]" />
-          <span className="font-display text-[28px] font-extrabold tracking-[-0.02em]">Franck School</span>
-        </Link>
-        <div className="relative max-w-md">
-          <p className="font-display text-[42px] font-bold leading-[1.03] tracking-[-0.035em]">Votre école, partout avec vous.</p>
-          <p className="mt-4 text-[17px] leading-relaxed text-brand-200">Au bureau, en salle des professeurs ou à la maison : connectez-vous et retrouvez votre espace là où vous l’avez laissé.</p>
-          <div className="mt-8">
-            <SequenceRail dark />
-          </div>
-        </div>
-        <p className="relative text-sm text-brand-300">Année scolaire 2026-2027 · séquence 2 en cours</p>
-      </aside>
-
-      <div className="flex items-center justify-center px-5 py-12 sm:px-10">
-        <div className="w-full max-w-[400px]">
-          <Link to="/" className="mb-10 inline-flex items-center gap-1.5 text-sm font-semibold text-encre-doux transition-colors hover:text-brand-700">
-            <ArrowLeft className="size-4" aria-hidden /> Retour à l’accueil
-          </Link>
-          <Link to="/" className="mb-8 flex items-center gap-3 lg:hidden" aria-label="Franck School, accueil">
-            <img src="/logo.svg" alt="" className="size-14 rounded-2xl" />
-            <span className="font-display text-2xl font-extrabold tracking-[-0.02em]">Franck School</span>
-          </Link>
+    <CadreAuth titre="Votre école, partout avec vous." texte="Au bureau, en salle des professeurs ou à la maison : connectez-vous et retrouvez votre espace là où vous l’avez laissé.">
           <h1 className="font-display text-[34px] font-bold leading-tight tracking-[-0.03em]">Connexion à votre espace</h1>
           <p className="mt-2 text-encre-doux">Utilisez l’e-mail ou le numéro de téléphone enregistré par votre établissement.</p>
 
@@ -129,8 +105,6 @@ export default function Connexion() {
               </ul>
             </section>
           )}
-        </div>
-      </div>
-    </div>
+    </CadreAuth>
   );
 }
