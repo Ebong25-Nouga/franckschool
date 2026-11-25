@@ -12,7 +12,8 @@ import { Absences, Bulletins, ValidationNotes } from './pages/etablissement/Eval
 import Remboursements from './pages/etablissement/Remboursements';
 import TableauDeBord from './pages/etablissement/TableauDeBord';
 import { EmploiDuTemps, MesClasses, SaisieNotes, TableauEnseignant } from './pages/enseignant/Enseignant';
-import { EcoleParent, PaiementsParent, TableauParent } from './pages/parent/Parent';
+import EspaceParent from './pages/parent/EspaceParent';
+import { Accueil as AccueilParent, InformationsScolaires, MesEnfants, NotesBulletins, Notifications as NotificationsParent, PaiementsHistorique, ParametresCompte, Recus } from './pages/parent/PagesParent';
 import { Abonnements, Journal, ListeEtablissements, Statistiques, TableauPlateforme } from './pages/plateforme/Plateforme';
 import Accueil from './pages/public/Accueil';
 import Connexion from './pages/public/Connexion';
@@ -72,11 +73,16 @@ export default function App() {
               <Route path="/enseignant/emploi-du-temps" element={<EmploiDuTemps />} />
             </Route>
 
-            {/* Interface 5 — Espace parent */}
-            <Route element={<Protege espaces={['parent']}><AppShell /></Protege>}>
-              <Route path="/parent" element={<TableauParent />} />
-              <Route path="/parent/paiements" element={<PaiementsParent />} />
-              <Route path="/parent/ecole" element={<EcoleParent />} />
+            {/* Interface 5 — Espace parent (structure validée le 25/11/2026) */}
+            <Route element={<Protege espaces={['parent']}><EspaceParent /></Protege>}>
+              <Route path="/parent" element={<AccueilParent />} />
+              <Route path="/parent/enfants" element={<MesEnfants />} />
+              <Route path="/parent/informations" element={<InformationsScolaires />} />
+              <Route path="/parent/notes" element={<NotesBulletins />} />
+              <Route path="/parent/paiements" element={<PaiementsHistorique />} />
+              <Route path="/parent/recus" element={<Recus />} />
+              <Route path="/parent/notifications" element={<NotificationsParent />} />
+              <Route path="/parent/compte" element={<ParametresCompte />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
