@@ -8,7 +8,6 @@ import {
   Check,
   CheckCheck,
   Clock,
-  Copy,
   Download,
   Eye,
   FileBadge2,
@@ -18,7 +17,6 @@ import {
   Megaphone,
   Phone,
   Receipt,
-  Smartphone,
   TimerReset,
   Wallet,
   type LucideIcon,
@@ -29,6 +27,7 @@ import { Avatar, Button, Gauge, Grade, Modal, Pill, Segmented, useToast } from '
 import { ecole, fcfa, note } from '@/data/demo';
 import { bulletins, calendrier, echeancier, emploiParClasse, enfants, moyenne, notesParEnfant, notificationsParent, paiements, parent, rangs, type Paiement, type TypeNotif } from '@/data/parent';
 import { useEnfant } from './EspaceParent';
+import { PaiementEnLigne } from './PaiementEnLigne';
 
 /* ---------------------------------------------------------------
  * Éléments communs
@@ -405,12 +404,21 @@ export function NotesBulletins() {
  * ============================================================= */
 export function PaiementsHistorique() {
   const { enfant } = useEnfant();
-  const toast = useToast();
-  const [mode, setMode] = useState<'momo' | 'om'>('momo');
-  const reste = enfant.du - enfant.paye;
-  const tranches = echeancier[enfant.id];
-  const historique = paiements.filter((p) => p.enfant === enfant.id);
-  const codes = { momo: { nom: 'MTN MoMo', code: '*126*4*482137#' }, om: { nom: 'Orange Money', code: '#150*47*482137#' } };
+  const [payer, setPayer] = useState(false);
+  // Paiements faits en ligne pendant la visite (démonstration)
+  const [enLigne, setEnLigne] = useState<Paiement[]>([]);
+  const payeTotal = enfant.paye + enLigne.reduce((s, p) => s + p.montant, 0);
+  const reste = enfant.du - payeTotal;
+
+  // Répartit le total payé sur les tranches, dans l'ordre
+  let disponible = payeTotal;
+  const tranches = echeancier[enfant.id].map((t) => {
+    const paye = Math.min(t.montant, disponible);
+    disponible -= paye;
+    return { ...t, paye };
+  });
+  const prochaine = tranches.find((t) => t.paye < t.montant);
+  const historique = [...enLigne, ...paiements.filter((p) => p.enfant === enfant.id)];
 
   return (
     <>
@@ -420,27 +428,19 @@ export function PaiementsHistorique() {
         <section className={cn('relative overflow-hidden rounded-[24px] p-6 text-white shadow-leve sm:p-7', reste ? 'seyes bg-brand-950' : 'bg-valide')}>
           <p className="text-sm opacity-80">Reste à payer</p>
           <p className="mt-2 font-display text-[44px] font-extrabold leading-none tracking-[-0.04em] chiffres">{fcfa(reste).replace(' FCFA', '')}<span className="ml-2 text-lg font-semibold tracking-normal opacity-80">FCFA</span></p>
-          <Gauge value={(enfant.paye / enfant.du) * 100} label="Scolarité payée" className="mt-5 [&_span]:text-white" />
+          <Gauge value={(payeTotal / enfant.du) * 100} label="Scolarité payée" className="mt-5 [&_span]:text-white" />
           {reste > 0 ? (
-            <div className="mt-6 rounded-2xl bg-white p-4 text-encre">
-              <p className="text-sm font-semibold">Payer depuis votre téléphone</p>
-              <div className="mt-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Moyen de paiement">
-                {(['momo', 'om'] as const).map((m) => (
-                  <button key={m} role="radio" aria-checked={mode === m} onClick={() => setMode(m)} className={cn('flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl text-[13px] font-semibold ring-1 ring-inset', mode === m ? 'bg-brand-50 ring-2 ring-brand-600' : 'ring-papier-ligne')}>
-                    <Smartphone className={cn('size-4', m === 'momo' ? 'text-[#7A5B00]' : 'text-orange')} aria-hidden />
-                    {codes[m].nom}
-                  </button>
-                ))}
+            <div className="mt-6 rounded-2xl bg-white p-5 text-encre">
+              <p className="font-display text-lg font-bold">Payer sans vous déplacer</p>
+              <p className="mt-1 text-[14px] leading-relaxed text-encre-doux">Payez en ligne par MTN Mobile Money ou Orange Money. Vous confirmez sur votre téléphone et le reçu arrive tout de suite.</p>
+              <div className="mt-4 flex items-center gap-2" aria-hidden>
+                <span className="grid h-7 place-items-center rounded-md bg-[#FFCC00] px-2 text-[11px] font-black text-encre">MoMo</span>
+                <span className="grid h-7 place-items-center rounded-md bg-[#FF7900] px-2 text-[11px] font-black text-white">Orange</span>
               </div>
-              <ol className="mt-4 flex flex-col gap-2 text-[14px] text-encre-doux">
-                <li>1. Composez le code ci-dessous.</li>
-                <li>2. Indiquez le montant, puis le matricule <b className="font-mono text-encre">{enfant.matricule}</b> en motif.</li>
-                <li>3. Le reçu arrive dans votre espace dès que l’école a confirmé le paiement.</li>
-              </ol>
-              <div className="mt-3 flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-papier px-3 py-2.5 font-mono text-[15px] font-bold">{codes[mode].code}</code>
-                <Button size="sm" variant="secondary" icon={Copy} onClick={() => { navigator.clipboard?.writeText(codes[mode].code).catch(() => {}); toast('Code de paiement copié.'); }}>Copier</Button>
-              </div>
+              <Button size="lg" icon={Wallet} className="mt-4 w-full" onClick={() => setPayer(true)}>
+                Payer maintenant{prochaine ? ` · ${fcfa(Math.min(prochaine.montant - prochaine.paye, reste))}` : ''}
+              </Button>
+              <p className="mt-3 text-center text-[13px] text-encre-doux">Vous pouvez aussi payer en espèces au secrétariat.</p>
             </div>
           ) : (
             <p className="mt-6 flex items-center gap-2 text-[15px]"><CheckCheck className="size-5" aria-hidden />Toutes les tranches sont réglées. Merci.</p>
@@ -451,6 +451,7 @@ export function PaiementsHistorique() {
           <ol className="flex flex-col">
             {tranches.map((t, i) => {
               const ok = t.paye >= t.montant;
+              const partiel = !ok && t.paye > 0;
               return (
                 <li key={t.libelle} className="relative flex items-center gap-4 pb-5 last:pb-0">
                   {i < tranches.length - 1 && <span className={cn('absolute left-[13px] top-8 h-[calc(100%-20px)] w-[2px]', ok ? 'bg-valide' : 'bg-papier-2')} aria-hidden />}
@@ -459,7 +460,7 @@ export function PaiementsHistorique() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{t.libelle}</p>
-                    <p className="text-[13px] text-encre-doux">{ok ? 'Payée' : `À payer avant le ${t.limite}`}</p>
+                    <p className="text-[13px] text-encre-doux">{ok ? 'Payée' : partiel ? `${fcfa(t.paye)} payés, reste ${fcfa(t.montant - t.paye)}` : `À payer avant le ${t.limite}`}</p>
                   </div>
                   <span className={cn('font-display font-bold chiffres', !ok && 'text-stylo')}>{fcfa(t.montant)}</span>
                 </li>
@@ -472,11 +473,11 @@ export function PaiementsHistorique() {
       <Bloc titre="Historique des paiements" className="mt-6">
         <ul className="divide-y divide-papier-ligne/70">
           {historique.map((p) => (
-            <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3.5">
+            <li key={p.recu} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-3.5">
               <span className="grid size-10 place-items-center rounded-xl bg-valide-50 text-valide"><Wallet className="size-[18px]" aria-hidden /></span>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{p.libelle}</p>
-                <p className="text-[13px] text-encre-doux">{p.date} · {p.mode}</p>
+                <p className="text-[13px] text-encre-doux">{p.date} · {p.mode}{p.caissier === 'Paiement en ligne' ? ' · en ligne' : ''}</p>
               </div>
               <span className="font-display font-bold text-valide chiffres">+ {fcfa(p.montant)}</span>
               <Link to="/parent/recus" className="w-full text-right text-[13px] font-semibold text-brand-700 hover:underline sm:w-auto">Reçu {p.recu}</Link>
@@ -484,6 +485,21 @@ export function PaiementsHistorique() {
           ))}
         </ul>
       </Bloc>
+
+      {payer && (
+        <PaiementEnLigne
+          enfant={enfant}
+          reste={reste}
+          prochaine={prochaine ? { libelle: prochaine.libelle, montant: prochaine.montant - prochaine.paye } : undefined}
+          onClose={() => setPayer(false)}
+          onPaye={(montant, operateur, recu) =>
+            setEnLigne((l) => [
+              { id: Date.now(), enfant: enfant.id, date: '25/11/2026', libelle: prochaine ? `Scolarité, ${prochaine.libelle}` : 'Scolarité', mode: operateur.startsWith('MTN') ? 'MTN MoMo' : 'Orange Money', montant, recu, caissier: 'Paiement en ligne' },
+              ...l,
+            ])
+          }
+        />
+      )}
     </>
   );
 }

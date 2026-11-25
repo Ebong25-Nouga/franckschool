@@ -17,3 +17,6 @@ Chaque décision est datée, motivée et porte un statut : **Validée** (accord 
 | D1–D9 | 24/11/2026 | Corrections du modèle de données (isolation, permissions, versions…) | Audit BD § 8 | Proposée | Audit BD V1 |
 | 011 | 25/11/2026 | Formulaire « Demander une démonstration » : pas de stockage en base ; la demande sera envoyée sur le WhatsApp du propriétaire (lien avec message prérempli) | Demande du propriétaire | Validée, à mettre en place plus tard | Échange du 25/11 |
 | 012 | 25/11/2026 | Page d'accueil validée (11 sections, vidéo Remotion, tarifs provisoires) | Validation du propriétaire | Validée | Échange du 25/11 |
+| 013 | 25/11/2026 | Espace parent : structure en 8 parties (Accueil, Mes enfants, Informations scolaires, Notes et bulletins, Paiements et historique, Reçus, Notifications, Paramètres du compte), sans tableau de bord ; « Communication » retirée | Demande du propriétaire | Validée | Échange du 25/11 |
+| 014 | 25/11/2026 | Les parents voient les notes et téléchargent les bulletins (point à confirmer du document maître § 3.6) | Structure fournie par le propriétaire | Validée | Échange du 25/11 |
+| 015 | 25/11/2026 | Paiement en ligne depuis l'espace parent (MTN MoMo, Orange Money) ; agrégateur de paiement à choisir lors du backend | Demande du propriétaire | Validée, interface faite | Échange du 25/11 |
