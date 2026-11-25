@@ -2,6 +2,7 @@ import { ArrowRight, ArrowUpRight, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { versSection } from '@/lib/defiler';
 
 /* =========================================================
  * « Prêt pour la rentrée » : une page de cahier.
@@ -38,7 +39,7 @@ export function PretRentree({ onDemo }: { onDemo: () => void }) {
                   <ArrowRight data-icon="inline-end" />
                 </Button>
                 <Button asChild variant="outline" className="h-12 bg-white px-6 text-[15px] font-semibold">
-                  <a href="#tarifs">Voir les tarifs</a>
+                  <a href="#tarifs" onClick={(e) => versSection(e, 'tarifs')}>Voir les tarifs</a>
                 </Button>
               </div>
               <ul className="mt-auto flex flex-col gap-2.5 pt-10 text-[15px] text-encre-doux">
@@ -139,7 +140,7 @@ export function PiedDePage({ onDemo }: { onDemo: () => void }) {
                 <ul className="mt-4 flex flex-col gap-3">
                   {c.liens.map((l) => (
                     <li key={l.label}>
-                      <a href={l.href} className="text-[15px] text-brand-200 transition-colors hover:text-white">{l.label}</a>
+                      <a href={l.href} onClick={(e) => versSection(e, l.href.slice(1))} className="text-[15px] text-brand-200 transition-colors hover:text-white">{l.label}</a>
                     </li>
                   ))}
                 </ul>
@@ -163,7 +164,7 @@ export function PiedDePage({ onDemo }: { onDemo: () => void }) {
         <Separator className="bg-white/10" />
         <div className="flex flex-col gap-3 py-7 text-[13px] text-brand-300 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Franck School. Gestion scolaire conçue au Cameroun.</p>
-          <a href="#" className="inline-flex items-center gap-1.5 font-medium text-brand-200 transition-colors hover:text-white">
+          <a href="#" onClick={(e) => versSection(e, '')} className="inline-flex items-center gap-1.5 font-medium text-brand-200 transition-colors hover:text-white">
             Haut de page <ArrowUpRight className="size-3.5 -rotate-45" aria-hidden />
           </a>
         </div>

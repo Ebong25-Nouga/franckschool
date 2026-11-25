@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { versSection } from '@/lib/defiler';
 import { cn } from '@/lib/utils';
 import { ApercuDirection, ApercuEnseignant, ApercuParent, ApercuSecretariat, FenetreApp, MiniJournal } from './accueil/Apercus';
 import { PiedDePage, PretRentree } from './accueil/Fin';
@@ -116,6 +117,7 @@ const questions = [
  * ------------------------------------------------------------- */
 export default function Accueil() {
   const [demo, setDemo] = useState(false);
+  const [menu, setMenu] = useState(false);
   const [defile, setDefile] = useState(false);
 
   useEffect(() => {
@@ -137,7 +139,7 @@ export default function Accueil() {
           <ul className="hidden items-center gap-0.5 xl:flex">
             {liens.map((l) => (
               <li key={l.href}>
-                <a href={l.href} className="whitespace-nowrap rounded-lg px-3 py-2 text-[14px] font-medium text-brand-100/85 transition-colors hover:bg-white/10 hover:text-white">{l.label}</a>
+                <a href={l.href} onClick={(e) => versSection(e, l.href.slice(1))} className="whitespace-nowrap rounded-lg px-3 py-2 text-[14px] font-medium text-brand-100/85 transition-colors hover:bg-white/10 hover:text-white">{l.label}</a>
               </li>
             ))}
           </ul>
@@ -149,7 +151,7 @@ export default function Accueil() {
               Demander une démonstration
             </Button>
           </div>
-          <Sheet>
+          <Sheet open={menu} onOpenChange={setMenu}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon-lg" className="ml-auto text-white hover:bg-white/10 hover:text-white sm:ml-0 xl:hidden" aria-label="Ouvrir le menu">
                 <Menu />
@@ -162,12 +164,12 @@ export default function Accueil() {
               </SheetHeader>
               <ul className="flex flex-col gap-1 px-4">
                 {liens.map((l) => (
-                  <li key={l.href}><a href={l.href} className="block rounded-lg px-3 py-3 font-medium hover:bg-muted">{l.label}</a></li>
+                  <li key={l.href}><a href={l.href} onClick={(e) => { setMenu(false); versSection(e, l.href.slice(1), 300); }} className="block rounded-lg px-3 py-3.5 font-medium hover:bg-muted">{l.label}</a></li>
                 ))}
               </ul>
               <div className="mt-auto flex flex-col gap-2 p-4">
                 <Button asChild variant="outline" className="h-11"><Link to="/connexion">Se connecter</Link></Button>
-                <Button className="h-11" onClick={() => setDemo(true)}>Demander une démonstration</Button>
+                <Button className="h-11" onClick={() => { setMenu(false); setDemo(true); }}>Demander une démonstration</Button>
               </div>
             </SheetContent>
           </Sheet>
@@ -451,7 +453,16 @@ function DemandeDemo({ ouvert, onChange }: { ouvert: boolean; onChange: (v: bool
 
   return (
     <Dialog open={ouvert} onOpenChange={onChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:max-w-[520px] sm:p-6"
+        onOpenAutoFocus={(e) => {
+          // Sur téléphone, ne pas ouvrir le clavier tout de suite : il cacherait le formulaire
+          if (window.innerWidth < 640) {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).focus();
+          }
+        }}
+      >
         <form onSubmit={envoyer} noValidate>
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Demander une démonstration</DialogTitle>
@@ -461,29 +472,29 @@ function DemandeDemo({ ouvert, onChange }: { ouvert: boolean; onChange: (v: bool
             <div className="grid gap-4 sm:grid-cols-2">
               <Field data-invalid={essai && !!erreurs.nom}>
                 <FieldLabel htmlFor="d-nom">Votre nom</FieldLabel>
-                <Input id="d-nom" autoComplete="name" value={f.nom} onChange={(e) => setF({ ...f, nom: e.target.value })} aria-invalid={essai && !!erreurs.nom} className="h-10" />
+                <Input id="d-nom" autoComplete="name" value={f.nom} onChange={(e) => setF({ ...f, nom: e.target.value })} aria-invalid={essai && !!erreurs.nom} className="h-11 text-[16px] sm:text-sm" />
                 {essai && erreurs.nom && <FieldDescription className="text-destructive">{erreurs.nom}</FieldDescription>}
               </Field>
               <Field data-invalid={essai && !!erreurs.tel}>
                 <FieldLabel htmlFor="d-tel">Téléphone</FieldLabel>
-                <Input id="d-tel" type="tel" inputMode="tel" autoComplete="tel" placeholder="+237 6XX XX XX XX" value={f.tel} onChange={(e) => setF({ ...f, tel: e.target.value })} aria-invalid={essai && !!erreurs.tel} className="h-10" />
+                <Input id="d-tel" type="tel" inputMode="tel" autoComplete="tel" placeholder="+237 6XX XX XX XX" value={f.tel} onChange={(e) => setF({ ...f, tel: e.target.value })} aria-invalid={essai && !!erreurs.tel} className="h-11 text-[16px] sm:text-sm" />
                 {essai && erreurs.tel && <FieldDescription className="text-destructive">{erreurs.tel}</FieldDescription>}
               </Field>
             </div>
             <Field data-invalid={essai && !!erreurs.ecole}>
               <FieldLabel htmlFor="d-ecole">Établissement</FieldLabel>
-              <Input id="d-ecole" autoComplete="organization" value={f.ecole} onChange={(e) => setF({ ...f, ecole: e.target.value })} aria-invalid={essai && !!erreurs.ecole} className="h-10" />
+              <Input id="d-ecole" autoComplete="organization" value={f.ecole} onChange={(e) => setF({ ...f, ecole: e.target.value })} aria-invalid={essai && !!erreurs.ecole} className="h-11 text-[16px] sm:text-sm" />
               {essai && erreurs.ecole && <FieldDescription className="text-destructive">{erreurs.ecole}</FieldDescription>}
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="d-ville">Ville</FieldLabel>
-                <Input id="d-ville" value={f.ville} onChange={(e) => setF({ ...f, ville: e.target.value })} placeholder="Ex. Douala" className="h-10" />
+                <Input id="d-ville" value={f.ville} onChange={(e) => setF({ ...f, ville: e.target.value })} placeholder="Ex. Douala" className="h-11 text-[16px] sm:text-sm" />
               </Field>
               <Field>
                 <FieldLabel htmlFor="d-taille">Nombre d’élèves</FieldLabel>
                 <Select value={f.taille} onValueChange={(v) => setF({ ...f, taille: v })}>
-                  <SelectTrigger id="d-taille" className="h-10 w-full"><SelectValue placeholder="Choisir" /></SelectTrigger>
+                  <SelectTrigger id="d-taille" className="h-11! w-full text-[16px] sm:text-sm"><SelectValue placeholder="Choisir" /></SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       {['Moins de 300', '300 à 1 000', 'Plus de 1 000', 'Plusieurs établissements'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
@@ -494,8 +505,8 @@ function DemandeDemo({ ouvert, onChange }: { ouvert: boolean; onChange: (v: bool
             </div>
           </FieldGroup>
           <DialogFooter>
-            <Button type="button" variant="outline" className="h-10 px-4" onClick={() => onChange(false)}>Annuler</Button>
-            <Button type="submit" className="h-10 px-5">Envoyer la demande</Button>
+            <Button type="button" variant="outline" className="h-11 px-4" onClick={() => onChange(false)}>Annuler</Button>
+            <Button type="submit" className="h-11 px-5">Envoyer la demande</Button>
           </DialogFooter>
         </form>
       </DialogContent>
