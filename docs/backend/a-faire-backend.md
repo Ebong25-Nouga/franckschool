@@ -39,3 +39,14 @@ Dernière mise à jour : 25/11/2026.
 |---|---|---|---|
 | B14 | Notifications réelles (paiement reçu, nouvelles notes, retards, messages de l'école) et préférences, dont l'envoi par SMS | Notifications, Paramètres | 013 |
 | B15 | Notes visibles par les parents seulement après validation par l'établissement | Notes et bulletins | 014 |
+
+## Espace enseignant
+
+| # | À faire | Interface concernée | Décision |
+|---|---|---|---|
+| B16 | **Vérifier les permissions côté Laravel** (pas seulement masquer les menus) : un enseignant ne voit que ses classes et matières ; seul le titulaire accède à sa classe principale | Tout l'espace enseignant | 016 |
+| B17 | Un seul compte par enseignant ; titulaire d'une classe précise (`classes.professeur_principal_id`), simple ailleurs ; historique conservé s'il change de classe principale | Mon profil, Ma classe principale | 016 |
+| B18 | Saisie des notes : brouillon, soumission à l'administration, verrouillage après soumission, notes renvoyées avec motif | Saisie des notes, Notes soumises | Audit BD § 3.5 |
+| B19 | Demandes de correction : créées par l'administration, corrigées par l'enseignant concerné uniquement, justification conservée (`historique_notes`), validation par l'administration | Demandes de correction | 016 |
+| B20 | Calculs pour le titulaire : moyennes générales provisoires, moyennes par matière, état de saisie par matière, enseignants en retard | Ma classe principale | 016 |
+| B21 | Emploi du temps : fonctionnement à définir (actuellement provisoire, données d'exemple) | Emploi du temps | À définir |

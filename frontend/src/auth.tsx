@@ -19,7 +19,8 @@ export const comptesDemo: Record<string, Session> = {
   'super@franckschool.cm': { espace: 'super', nom: 'Franck Ebong', fonction: 'Super Administrateur', permissions: [] },
   'admin@etoiles.cm': { espace: 'admin', nom: 'Jean-Pierre Manga', fonction: "Administrateur d'établissement", permissions: TOUTES },
   'secretaire@etoiles.cm': { espace: 'secretaire', nom: 'Nadine Ekotto', fonction: 'Secrétaire', permissions: ['eleves', 'caisse', 'absences'] },
-  'prof@etoiles.cm': { espace: 'prof', nom: 'M. ESSOMBA Paul', fonction: 'Professeur principal — Tle C', permissions: [] },
+  'prof@etoiles.cm': { espace: 'prof', nom: 'M. ESSOMBA Paul', fonction: 'Professeur titulaire, Tle C', permissions: ['profil:essomba', 'classe_principale:Tle C'] },
+  'prof.fotso@etoiles.cm': { espace: 'prof', nom: 'M. FOTSO Alain', fonction: 'Professeur', permissions: ['profil:fotso'] },
   'parent@etoiles.cm': { espace: 'parent', nom: 'Mme Mbarga Odile', fonction: 'Parent', permissions: [] },
 };
 

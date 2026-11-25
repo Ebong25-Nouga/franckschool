@@ -11,7 +11,9 @@ import Eleves from './pages/etablissement/Eleves';
 import { Absences, Bulletins, ValidationNotes } from './pages/etablissement/Evaluations';
 import Remboursements from './pages/etablissement/Remboursements';
 import TableauDeBord from './pages/etablissement/TableauDeBord';
-import { EmploiDuTemps, MesClasses, SaisieNotes, TableauEnseignant } from './pages/enseignant/Enseignant';
+import { EnAttenteValidation, MoyennesMatiere, ResultatsClasse, SuiviSaisies } from './pages/enseignant/ClassePrincipale';
+import EspaceEnseignant from './pages/enseignant/EspaceEnseignant';
+import * as Ens from './pages/enseignant/PagesEnseignant';
 import EspaceParent from './pages/parent/EspaceParent';
 import { Accueil as AccueilParent, InformationsScolaires, MesEnfants, NotesBulletins, Notifications as NotificationsParent, PaiementsHistorique, ParametresCompte, Recus } from './pages/parent/PagesParent';
 import { Abonnements, Journal, ListeEtablissements, Statistiques, TableauPlateforme } from './pages/plateforme/Plateforme';
@@ -65,12 +67,24 @@ export default function App() {
               <Route path="/etablissement/parametres" element={<Parametres />} />
             </Route>
 
-            {/* Interface 4 — Espace enseignant */}
-            <Route element={<Protege espaces={['prof']}><AppShell /></Protege>}>
-              <Route path="/enseignant" element={<TableauEnseignant />} />
-              <Route path="/enseignant/classes" element={<MesClasses />} />
-              <Route path="/enseignant/notes" element={<SaisieNotes />} />
-              <Route path="/enseignant/emploi-du-temps" element={<EmploiDuTemps />} />
+            {/* Interface 4 — Espace enseignant (structure validée le 25/11/2026) */}
+            <Route element={<Protege espaces={['prof']}><EspaceEnseignant /></Protege>}>
+              <Route path="/enseignant" element={<Ens.Accueil />} />
+              <Route path="/enseignant/profil" element={<Ens.MonProfil />} />
+              <Route path="/enseignant/classes" element={<Ens.MesClasses />} />
+              <Route path="/enseignant/matieres" element={<Ens.MesMatieres />} />
+              <Route path="/enseignant/eleves" element={<Ens.ListesEleves />} />
+              <Route path="/enseignant/notes" element={<Ens.SaisieNotes />} />
+              <Route path="/enseignant/notes-soumises" element={<Ens.NotesSoumises />} />
+              <Route path="/enseignant/corrections" element={<Ens.DemandesCorrection />} />
+              <Route path="/enseignant/emploi-du-temps" element={<Ens.EmploiDuTemps />} />
+              <Route path="/enseignant/notifications" element={<Ens.Notifications />} />
+              <Route path="/enseignant/parametres" element={<Ens.Parametres />} />
+              {/* Professeur titulaire : visible selon les permissions */}
+              <Route path="/enseignant/classe-principale" element={<ResultatsClasse />} />
+              <Route path="/enseignant/classe-principale/moyennes" element={<MoyennesMatiere />} />
+              <Route path="/enseignant/classe-principale/saisies" element={<SuiviSaisies />} />
+              <Route path="/enseignant/classe-principale/attente" element={<EnAttenteValidation />} />
             </Route>
 
             {/* Interface 5 — Espace parent (structure validée le 25/11/2026) */}
