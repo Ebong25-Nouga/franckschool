@@ -35,7 +35,7 @@ export function Bloc({ titre, children, action, className, icone: Icone }: { tit
 }
 
 /** Chiffre clé (tableau de bord sur ordinateur). */
-export function Chiffre({ label, valeur, detail, icone: Icone, ton = 'encre' }: { label: string; valeur: string; detail?: ReactNode; icone: LucideIcon; ton?: 'encre' | 'stylo' | 'valide' | 'feutre' }) {
+export function Chiffre({ label, valeur, unite, detail, icone: Icone, ton = 'encre' }: { label: string; valeur: string; unite?: string; detail?: ReactNode; icone: LucideIcon; ton?: 'encre' | 'stylo' | 'valide' | 'feutre' }) {
   const teinte = { encre: 'bg-brand-50 text-brand-700', stylo: 'bg-stylo-50 text-stylo', valide: 'bg-valide-50 text-valide', feutre: 'bg-feutre-50 text-feutre-700' }[ton];
   return (
     <div className="rounded-[22px] bg-white p-5 shadow-feuille">
@@ -43,7 +43,10 @@ export function Chiffre({ label, valeur, detail, icone: Icone, ton = 'encre' }: 
         <p className="text-[13px] font-medium text-encre-doux">{label}</p>
         <span className={cn('grid size-9 place-items-center rounded-xl', teinte)}><Icone className="size-[18px]" aria-hidden /></span>
       </div>
-      <p className={cn('mt-2 font-display text-[32px] font-extrabold leading-none tracking-[-0.03em] chiffres', ton === 'stylo' && 'text-stylo')}>{valeur}</p>
+      <p className={cn('mt-2 font-display text-[32px] font-extrabold leading-none tracking-[-0.03em] chiffres', ton === 'stylo' && 'text-stylo')}>
+        {valeur}
+        {unite && <span className="ml-1.5 font-sans text-[15px] font-semibold tracking-normal text-encre-doux">{unite}</span>}
+      </p>
       {detail && <p className="mt-2 text-[13px] text-encre-doux">{detail}</p>}
     </div>
   );

@@ -258,7 +258,8 @@ export function Gauge({ value, label, showValue = true, className }: { value: nu
  * ======================================================= */
 export function Table({ head, children, caption, minWidth = 720 }: { head: (string | { label: string; align?: 'right' | 'center'; sr?: boolean })[]; children: ReactNode; caption: string; minWidth?: number }) {
   return (
-    <div className="overflow-x-auto">
+    // « relative » : les textes réservés aux lecteurs d'écran (sr-only) restent dans la zone défilante
+    <div className="relative overflow-x-auto">
       <table className="w-full text-left text-sm" style={{ minWidth }}>
         <caption className="sr-only">{caption}</caption>
         {head.length > 0 && <thead>

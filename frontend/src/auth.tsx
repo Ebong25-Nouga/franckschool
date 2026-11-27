@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { TOUS_DROITS_SECRETAIRE } from './lib/permissions';
 
 /**
  * Authentification de démonstration (sans API).
@@ -18,7 +19,10 @@ const TOUTES = ['eleves', 'classes', 'professeurs', 'notes', 'bulletins', 'caiss
 export const comptesDemo: Record<string, Session> = {
   'super@franckschool.cm': { espace: 'super', nom: 'Franck Ebong', fonction: 'Super Administrateur', permissions: [] },
   'admin@etoiles.cm': { espace: 'admin', nom: 'Jean-Pierre Manga', fonction: "Administrateur d'établissement", permissions: TOUTES },
-  'secretaire@etoiles.cm': { espace: 'secretaire', nom: 'Nadine Ekotto', fonction: 'Secrétaire', permissions: ['eleves', 'caisse', 'absences'] },
+  // Secrétaire avec presque tous les droits (sauf « Supprimer »)
+  'secretaire@etoiles.cm': { espace: 'secretaire', nom: 'Nadine Ekotto', fonction: 'Secrétaire', permissions: TOUS_DROITS_SECRETAIRE.filter((d) => d !== 'supprimer') },
+  // Seconde secrétaire, droits limités : sert à tester les permissions
+  'paul.b@etoiles.cm': { espace: 'secretaire', nom: 'Paul Biyong', fonction: 'Secrétaire (droits limités)', permissions: ['eleves', 'classes', 'bulletins', 'caisse'] },
   'prof@etoiles.cm': { espace: 'prof', nom: 'M. ESSOMBA Paul', fonction: 'Professeur titulaire, Tle C', permissions: ['profil:essomba', 'classe_principale:Tle C'] },
   'prof.fotso@etoiles.cm': { espace: 'prof', nom: 'M. FOTSO Alain', fonction: 'Professeur', permissions: ['profil:fotso'] },
   'parent@etoiles.cm': { espace: 'parent', nom: 'Mme Mbarga Odile', fonction: 'Parent', permissions: [] },
@@ -27,7 +31,7 @@ export const comptesDemo: Record<string, Session> = {
 export const accueilParEspace: Record<Espace, string> = {
   super: '/plateforme',
   admin: '/etablissement',
-  secretaire: '/etablissement',
+  secretaire: '/secretariat',
   prof: '/enseignant',
   parent: '/parent',
 };
@@ -37,7 +41,10 @@ const Ctx = createContext<{ session: Session | null; connexion: (email: string) 
 function lire(): Session | null {
   try {
     const v = localStorage.getItem('fs.session');
-    return v ? (JSON.parse(v) as Session) : null;
+    if (!v) return null;
+    const s = JSON.parse(v) as Session;
+    // Démo : on reprend les droits à jour du compte de test (ils ont pu changer depuis la dernière connexion)
+    return Object.values(comptesDemo).find((c) => c.nom === s.nom && c.espace === s.espace) ?? s;
   } catch {
     return null;
   }

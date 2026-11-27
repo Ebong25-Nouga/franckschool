@@ -18,6 +18,17 @@ import EspaceParent from './pages/parent/EspaceParent';
 import { Accueil as AccueilParent, InformationsScolaires, MesEnfants, NotesBulletins, Notifications as NotificationsParent, PaiementsHistorique, ParametresCompte, Recus } from './pages/parent/PagesParent';
 import { Abonnements, Journal, ListeEtablissements, Statistiques, TableauPlateforme } from './pages/plateforme/Plateforme';
 import Accueil from './pages/public/Accueil';
+import AccueilSecretariat from './pages/secretariat/Accueil';
+import { Annonces, Documents, Statistiques as StatistiquesSecretariat } from './pages/secretariat/Communication';
+import { MonActivite, MonCompte } from './pages/secretariat/Compte';
+import ElevesSecretariat from './pages/secretariat/Eleves';
+import EspaceSecretaire, { Garde } from './pages/secretariat/EspaceSecretaire';
+import { Bulletins as BulletinsSecretariat, Notes as NotesSecretariat } from './pages/secretariat/Evaluations';
+import { Caisse as CaisseSecretariat, Cloture, Depenses, Remboursements as RemboursementsSecretariat } from './pages/secretariat/Finances';
+import Inscriptions from './pages/secretariat/Inscriptions';
+import { Enseignants, Parents } from './pages/secretariat/Personnes';
+import { Annees, Classes as ClassesSecretariat, Matieres } from './pages/secretariat/Structure';
+import { Absences as AbsencesSecretariat, Discipline, EmploisDuTemps } from './pages/secretariat/VieScolaire';
 import Connexion from './pages/public/Connexion';
 import MotDePasseOublie from './pages/public/MotDePasseOublie';
 
@@ -52,8 +63,34 @@ export default function App() {
               <Route path="/plateforme/abonnements" element={<Abonnements />} />
             </Route>
 
-            {/* Interface 3 — Administration de l'établissement (admin + secrétaires) */}
-            <Route element={<Protege espaces={['admin', 'secretaire']}><AppShell /></Protege>}>
+            {/* Interface 3a — Espace secrétariat (séparé, chaque page protégée par son droit) */}
+            <Route element={<Protege espaces={['secretaire']}><EspaceSecretaire /></Protege>}>
+              <Route path="/secretariat" element={<AccueilSecretariat />} />
+              <Route path="/secretariat/eleves" element={<Garde droit="eleves"><ElevesSecretariat /></Garde>} />
+              <Route path="/secretariat/inscriptions" element={<Garde droit="inscriptions"><Inscriptions /></Garde>} />
+              <Route path="/secretariat/parents" element={<Garde droit="parents"><Parents /></Garde>} />
+              <Route path="/secretariat/enseignants" element={<Garde droit="enseignants"><Enseignants /></Garde>} />
+              <Route path="/secretariat/classes" element={<Garde droit="classes"><ClassesSecretariat /></Garde>} />
+              <Route path="/secretariat/matieres" element={<Garde droit="matieres"><Matieres /></Garde>} />
+              <Route path="/secretariat/annees" element={<Garde droit="archives"><Annees /></Garde>} />
+              <Route path="/secretariat/absences" element={<Garde droit="absences"><AbsencesSecretariat /></Garde>} />
+              <Route path="/secretariat/discipline" element={<Garde droit="discipline"><Discipline /></Garde>} />
+              <Route path="/secretariat/emplois-du-temps" element={<Garde droit="emplois"><EmploisDuTemps /></Garde>} />
+              <Route path="/secretariat/notes" element={<Garde droit="notes"><NotesSecretariat /></Garde>} />
+              <Route path="/secretariat/bulletins" element={<Garde droit="bulletins"><BulletinsSecretariat /></Garde>} />
+              <Route path="/secretariat/caisse" element={<Garde droit="caisse"><CaisseSecretariat /></Garde>} />
+              <Route path="/secretariat/depenses" element={<Garde droit="depenses"><Depenses /></Garde>} />
+              <Route path="/secretariat/remboursements" element={<Garde droit="remboursements"><RemboursementsSecretariat /></Garde>} />
+              <Route path="/secretariat/cloture" element={<Garde droit="clotures"><Cloture /></Garde>} />
+              <Route path="/secretariat/documents" element={<Garde droit="documents"><Documents /></Garde>} />
+              <Route path="/secretariat/annonces" element={<Garde droit="annonces"><Annonces /></Garde>} />
+              <Route path="/secretariat/statistiques" element={<Garde droit="statistiques"><StatistiquesSecretariat /></Garde>} />
+              <Route path="/secretariat/activite" element={<MonActivite />} />
+              <Route path="/secretariat/compte" element={<MonCompte />} />
+            </Route>
+
+            {/* Interface 3b — Administration de l'établissement (sera refaite après validation du secrétariat) */}
+            <Route element={<Protege espaces={['admin']}><AppShell /></Protege>}>
               <Route path="/etablissement" element={<TableauDeBord />} />
               <Route path="/etablissement/eleves" element={<Eleves />} />
               <Route path="/etablissement/classes" element={<Classes />} />
