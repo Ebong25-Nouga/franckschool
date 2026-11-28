@@ -45,7 +45,16 @@ export function Caisse() {
   const [q, setQ] = useState('');
   const [annuler, setAnnuler] = useState<Operation | null>(null);
   useEffect(() => {
-    if ([...params.keys()].length) setParams({}, { replace: true });
+    if (![...params.keys()].length) return;
+    // Arrivée depuis la recherche de l'en-tête : on cherche l'opération sur toute la période
+    const v = params.get('q');
+    if (v) {
+      setQ(v);
+      setPeriode('tout');
+      setOnglet('journal');
+    }
+    if (params.get('encaisser')) setEncaisser(Number(params.get('eleve')) || 'oui');
+    setParams({}, { replace: true });
   }, [params, setParams]);
 
   const jour = aujourdhui();

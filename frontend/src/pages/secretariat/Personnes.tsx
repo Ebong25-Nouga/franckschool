@@ -1,5 +1,6 @@
 import { Copy, KeyRound, Link2, Pencil, Power, UserPlus, Users, Users2, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Titre } from '@/components/espace';
 import { Avatar, Button, EmptyState, IconButton, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
 import { BoutonsRetrait, Champ, ChoisirEleve, Grille, Liste, ModalMotif, nomEleve, Note, Pagination, Saisie } from './commun';
@@ -16,6 +17,14 @@ export function Parents() {
   const toast = useToast();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const v = params.get('q');
+    if (v === null) return;
+    setQ(v);
+    setPage(1);
+    setParams({}, { replace: true });
+  }, [params, setParams]);
   const [edition, setEdition] = useState<Parent | 'nouveau' | null>(null);
   const [lier, setLier] = useState<Parent | null>(null);
   const t = q.trim().toLowerCase();

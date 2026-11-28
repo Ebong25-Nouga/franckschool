@@ -25,9 +25,10 @@ import {
 import { createContext, useContext, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth';
+import EnteteBureau, { type ResultatRecherche } from '@/components/EnteteBureau';
 import { Avatar } from '@/components/kit';
 import { ecole } from '@/data/demo';
-import { demandesCorrection, notificationsEnseignant, profils, type ProfilEnseignant } from '@/data/enseignant';
+import { demandesCorrection, elevesDe, notificationsEnseignant, profils, type ProfilEnseignant } from '@/data/enseignant';
 
 /* =========================================================
  * Enseignant connecté et permissions
@@ -234,7 +235,34 @@ export default function EspaceEnseignant() {
           </div>
         )}
 
-        <main className="mx-auto w-full max-w-[1160px] px-4 pb-20 pt-6 sm:px-6 lg:px-10 lg:pt-10">
+        {/* En-tête (ordinateur) */}
+        <EnteteBureau
+          espace="Espace enseignant"
+          largeur="max-w-[1160px]"
+          accueil="/enseignant"
+          page={[...communs, ...classePrincipale].find((l) => l.to === loc.pathname && l.to !== '/enseignant')?.label ?? ''}
+          placeholder="Rechercher un élève, une classe, une page…"
+          rechercher={(q): ResultatRecherche[] => {
+            const r: ResultatRecherche[] = [...communs, ...classePrincipale].filter((l) => l.label.toLowerCase().includes(q)).map((l) => ({ id: 'p' + l.to, groupe: 'Pages', label: l.label, to: l.to, icone: l.icon }));
+            const classes = [...new Set(profil.affectations.map((a) => a.classe))];
+            classes.filter((c) => c.toLowerCase().includes(q)).forEach((c) => r.push({ id: 'c' + c, groupe: 'Mes classes', label: c, detail: profil.affectations.filter((a) => a.classe === c).map((a) => a.matiere).join(', '), to: `/enseignant/eleves?classe=${encodeURIComponent(c)}`, icone: BookMarked }));
+            classes.forEach((c) =>
+              elevesDe(c)
+                .filter((e) => `${e.nom} ${e.prenom} ${e.matricule}`.toLowerCase().includes(q))
+                .slice(0, 4)
+                .forEach((e) => r.push({ id: `e${c}${e.id}`, groupe: 'Élèves', label: `${e.nom} ${e.prenom}`, detail: `${e.matricule} · ${c}`, to: `/enseignant/eleves?classe=${encodeURIComponent(c)}`, icone: Users2 })),
+            );
+            return r;
+          }}
+          notifications={notificationsEnseignant.filter((n) => (n.prof === cle || n.prof === 'tous') && !n.lu).map((n) => ({ id: String(n.id), titre: n.titre, texte: n.texte, quand: n.jour, to: '/enseignant/notifications' }))}
+          toutesNotifications="/enseignant/notifications"
+          nom={nomComplet}
+          fonction={titulaire ? `Titulaire de la ${titulaire}` : 'Professeur'}
+          liens={[{ label: 'Mon profil', to: '/enseignant/profil', icone: UserRound }, { label: 'Paramètres', to: '/enseignant/parametres', icone: Settings }]}
+          onDeconnexion={sortir}
+        />
+
+        <main className="mx-auto w-full max-w-[1160px] px-4 pb-20 pt-6 sm:px-6 lg:px-10 lg:pt-9">
           <div key={loc.pathname} className="animate-entree">
             <Outlet />
           </div>

@@ -33,11 +33,12 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth';
+import EnteteBureau, { type NotificationEntete, type ResultatRecherche } from '@/components/EnteteBureau';
 import { Avatar, Button } from '@/components/kit';
 import { ecole } from '@/data/demo';
 import { libelleDroit } from '@/lib/permissions';
-import { useDroit } from './commun';
-import { SecretariatProvider, useSecretariat, visibles } from './store';
+import { nomEleve, useDroit } from './commun';
+import { aujourdhui, SecretariatProvider, useSecretariat, visibles } from './store';
 
 interface Lien {
   to: string;
@@ -152,6 +153,61 @@ function Navigation({ sombre, onNavigate }: { sombre?: boolean; onNavigate?: () 
   );
 }
 
+/* ---------- En-tête ordinateur : page en cours, recherche, notifications ---------- */
+function Entete({ onDeconnexion }: { onDeconnexion: () => void }) {
+  const { session } = useAuth();
+  const { etat } = useSecretariat();
+  const peut = useDroit();
+  const loc = useLocation();
+  const groupes = useMenu();
+  const liens = groupes.flatMap((g) => g.liens);
+  const page = liens.find((l) => l.to === loc.pathname && l.to !== '/secretariat')?.label ?? '';
+
+  const rechercher = (q: string): ResultatRecherche[] => {
+    const r: ResultatRecherche[] = liens.filter((l) => l.label.toLowerCase().includes(q)).map((l) => ({ id: 'p' + l.to, groupe: 'Pages', label: l.label, to: l.to, icone: l.icon }));
+    if (peut('eleves'))
+      visibles(etat.eleves)
+        .filter((e) => `${e.nom} ${e.prenom} ${e.matricule}`.toLowerCase().includes(q))
+        .slice(0, 5)
+        .forEach((e) => r.push({ id: 'e' + e.id, groupe: 'Élèves', label: nomEleve(e), detail: `${e.matricule} · ${e.classe}${e.situation === 'parti' ? ' · parti' : ''}`, to: `/secretariat/eleves?eleve=${e.id}`, icone: GraduationCap }));
+    if (peut('parents'))
+      visibles(etat.parents)
+        .filter((x) => `${x.nom} ${x.telephone}`.toLowerCase().includes(q))
+        .slice(0, 3)
+        .forEach((x) => r.push({ id: 'pa' + x.id, groupe: 'Parents', label: x.nom, detail: x.telephone, to: `/secretariat/parents?q=${encodeURIComponent(x.nom)}`, icone: Users }));
+    if (peut('caisse'))
+      etat.operations
+        .filter((o) => `${o.numero} ${o.reference ?? ''}`.toLowerCase().includes(q))
+        .slice(0, 3)
+        .forEach((o) => r.push({ id: 'o' + o.id, groupe: 'Caisse', label: `${o.numero} · ${o.libelle}`, detail: `${o.montant.toLocaleString('fr-FR')} FCFA${o.eleve ? ` · ${o.eleve}` : ''}`, to: `/secretariat/caisse?q=${o.numero}`, icone: Receipt }));
+    return r;
+  };
+
+  const jour = aujourdhui();
+  const notifications: NotificationEntete[] = [];
+  const absences = visibles(etat.absences).filter((a) => a.statut !== 'justifiee').length;
+  if (peut('absences') && absences) notifications.push({ id: 'abs' + absences, titre: 'Absences à justifier', texte: `${absences} absence(s) ou retard(s) attendent un justificatif.`, to: '/secretariat/absences' });
+  etat.remboursements.filter((r) => r.statut === 'approuvee').forEach((r) => peut('remboursements') && notifications.push({ id: 'rb' + r.id, titre: 'Remboursement approuvé', texte: `${r.montant.toLocaleString('fr-FR')} FCFA pour ${r.eleve} : à exécuter.`, to: '/secretariat/remboursements' }));
+  if (peut('clotures') && !etat.clotures.some((c) => c.date === jour)) notifications.push({ id: 'cl' + jour, titre: 'Clôture de caisse', texte: 'La caisse du jour n’est pas encore clôturée.', to: '/secretariat/cloture' });
+  visibles(etat.annonces).slice(0, 2).forEach((a) => notifications.push({ id: 'an' + a.id, titre: a.titre, texte: `Annonce de ${a.auteur} · ${a.destinataires}`, to: peut('annonces') ? '/secretariat/annonces' : undefined }));
+
+  if (!session) return null;
+  return (
+    <EnteteBureau
+      espace="Secrétariat"
+      accueil="/secretariat"
+      page={page}
+      placeholder={peut('eleves') ? 'Rechercher un élève, un matricule, un reçu…' : 'Rechercher une page…'}
+      rechercher={rechercher}
+      notifications={notifications}
+      nom={session.nom}
+      fonction={session.fonction}
+      liens={[{ label: 'Mon compte', to: '/secretariat/compte', icone: UserRound }, { label: 'Mon activité', to: '/secretariat/activite', icone: History }]}
+      onDeconnexion={onDeconnexion}
+    />
+  );
+}
+
 function Cadre() {
   const { session, deconnexion } = useAuth();
   const nav = useNavigate();
@@ -254,7 +310,9 @@ function Cadre() {
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-[1240px] px-4 pb-20 pt-6 sm:px-6 lg:px-10 lg:pt-10">
+      <Entete onDeconnexion={sortir} />
+
+      <main className="mx-auto w-full max-w-[1240px] px-4 pb-20 pt-6 sm:px-6 lg:px-10 lg:pt-9">
         <div key={loc.pathname} className="animate-entree">
           <Outlet />
         </div>

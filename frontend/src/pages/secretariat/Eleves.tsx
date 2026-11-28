@@ -1,6 +1,6 @@
 import { ArrowRightLeft, Banknote, FileText, GraduationCap, LogOut as Sortie, Pencil, Phone, Printer, UserPlus, X } from 'lucide-react';
-import { useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Titre } from '@/components/espace';
 import { Avatar, Button, Drawer, EmptyState, Gauge, Grade, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
 import { appreciation } from '@/data/demo';
@@ -22,6 +22,18 @@ export default function Eleves() {
   const [paiement, setPaiement] = useState('Tous');
   const [page, setPage] = useState(1);
   const [ouvert, setOuvert] = useState<number | null>(null);
+  const [params, setParams] = useSearchParams();
+  // Ouverture directe d'un dossier depuis la recherche de l'en-tête
+  useEffect(() => {
+    const id = Number(params.get('eleve'));
+    if (!id) return;
+    const e = etat.eleves.find((x) => x.id === id);
+    if (e) {
+      setOnglet(e.situation === 'parti' ? 'partis' : 'inscrits');
+      setOuvert(id);
+    }
+    setParams({}, { replace: true });
+  }, [params, setParams, etat.eleves]);
 
   const tous = visibles(etat.eleves);
   const liste = useMemo(() => {
