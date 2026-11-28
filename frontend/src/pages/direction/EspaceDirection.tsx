@@ -11,7 +11,6 @@ import {
   ClipboardList,
   FileBadge2,
   FileText,
-  Gavel,
   GraduationCap,
   History,
   Home,
@@ -51,7 +50,7 @@ export function useADecider() {
     const pret = mats.length > 0 && mats.every((m) => etat.releves.find((r) => r.classe === c && r.matiere === m.nom && r.sequence === 2)?.statut === 'validee');
     return pret && etat.bulletins[`${c}|Séquence 2`]?.statut !== 'publie';
   });
-  const retires = [...etat.eleves, ...etat.parents, ...etat.enseignants, ...etat.classes, ...etat.matieres, ...etat.absences, ...etat.incidents, ...etat.annonces].filter((x) => x.etat !== 'actif').length;
+  const retires = [...etat.eleves, ...etat.parents, ...etat.enseignants, ...etat.classes, ...etat.matieres, ...etat.absences, ...etat.annonces].filter((x) => x.etat !== 'actif').length;
   return { notes, corrections, remboursements, ecarts, aPublier, retires };
 }
 
@@ -108,7 +107,6 @@ function Direction() {
       liens: [
         { to: '/direction/inscriptions', label: 'Inscriptions', icon: UserPlus },
         { to: '/direction/absences', label: 'Absences et retards', icon: CalendarCheck2 },
-        { to: '/direction/discipline', label: 'Discipline', icon: Gavel },
         { to: '/direction/emplois-du-temps', label: 'Emplois du temps', icon: CalendarDays },
         { to: '/direction/depenses', label: 'Dépenses', icon: Receipt },
         { to: '/direction/remboursements', label: 'Remboursements', icon: Undo2 },

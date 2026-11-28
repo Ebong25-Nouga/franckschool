@@ -10,7 +10,6 @@ import {
   ClipboardList,
   FileBadge2,
   FileText,
-  Gavel,
   GraduationCap,
   History,
   Home,
@@ -76,7 +75,6 @@ function useMenuSecretariat(): Groupe[] {
       titre: 'Vie scolaire',
       liens: [
         { to: '/secretariat/absences', label: 'Absences et retards', icon: CalendarCheck2, droit: 'absences', badge: absencesATraiter },
-        { to: '/secretariat/discipline', label: 'Discipline', icon: Gavel, droit: 'discipline' },
         { to: '/secretariat/emplois-du-temps', label: 'Emplois du temps', icon: CalendarDays, droit: 'emplois' },
       ],
     },

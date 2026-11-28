@@ -84,19 +84,6 @@ export interface Absence extends Trace {
   motif?: string;
   auteur: string;
 }
-export const typesSanction = ['Observation', 'Avertissement', 'Blâme', 'Retenue', 'Convocation des parents', 'Exclusion temporaire'] as const;
-export type TypeSanction = (typeof typesSanction)[number];
-export interface Incident extends Trace {
-  id: number;
-  eleveId: number;
-  date: string;
-  type: TypeSanction;
-  motif: string;
-  duree?: string;
-  decidePar: string;
-  statut: 'en_cours' | 'levee';
-  auteur: string;
-}
 export const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'] as const;
 export const plages = ['07:30 – 09:30', '10:00 – 12:00', '13:00 – 15:00'] as const;
 export interface Creneau {
@@ -283,7 +270,6 @@ export interface Etat {
   classes: Classe[];
   matieres: Matiere[];
   absences: Absence[];
-  incidents: Incident[];
   creneaux: Creneau[];
   operations: Operation[];
   remboursements: DemandeRemboursement[];
@@ -301,7 +287,7 @@ export interface Etat {
 }
 
 /* ---------------- Dates ---------------- */
-export const VERSION_DONNEES = 5;
+export const VERSION_DONNEES = 6;
 const pad = (n: number, l = 2) => String(n).padStart(l, '0');
 export const isoJour = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const isoMinute = (d: Date) => `${isoJour(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -383,12 +369,6 @@ export function etatInitial(): Etat {
     { id: 5, eleveId: 22, type: 'retard', date: isoJour(ilYa(3)), creneau: '07:45', matiere: 'Philosophie', duree: '15 min', statut: 'justifiee', motif: 'Embouteillage signalé', auteur: 'Nadine Ekotto', etat: 'actif' },
     { id: 6, eleveId: 3, type: 'absence', date: isoJour(ilYa(4)), creneau: '07:30 – 09:30', matiere: 'SVT', statut: 'non_justifiee', auteur: 'Paul Biyong', etat: 'actif' },
     { id: 7, eleveId: 31, type: 'absence', date: isoJour(ilYa(6)), creneau: 'Journée', matiere: '—', statut: 'non_justifiee', auteur: 'Nadine Ekotto', etat: 'actif' },
-  ];
-
-  const incidents: Incident[] = [
-    { id: 1, eleveId: 7, date: isoJour(ilYa(2)), type: 'Avertissement', motif: 'Bavardages répétés en cours de Mathématiques.', decidePar: 'M. ESSOMBA Paul', statut: 'en_cours', auteur: 'Nadine Ekotto', etat: 'actif' },
-    { id: 2, eleveId: 12, date: isoJour(ilYa(5)), type: 'Retenue', motif: 'Devoir non rendu trois fois.', duree: '2 heures, samedi', decidePar: 'Surveillant général', statut: 'levee', auteur: 'Nadine Ekotto', etat: 'actif' },
-    { id: 3, eleveId: 23, date: isoJour(ilYa(8)), type: 'Convocation des parents', motif: 'Absences non justifiées répétées (8 en novembre).', decidePar: 'Le Principal', statut: 'en_cours', auteur: 'Paul Biyong', etat: 'actif' },
   ];
 
   // Emplois du temps de départ : deux classes remplies, les autres à créer
@@ -569,5 +549,5 @@ export function etatInitial(): Etat {
     { id: 10, quand: isoMinute(ilYa(3, 9, 0)), utilisateur: 'M. ESSOMBA Paul', role: 'Enseignant', etablissement: 'Les Étoiles', operation: 'Soumission', module: 'Notes', element: 'Mathématiques, 3ème A, séquence 2' },
   );
 
-  return { version: VERSION_DONNEES, eleves, parents, enseignants, classes, matieres, absences, incidents, creneaux, operations, remboursements, clotures, annonces, documents, journal, releves, bulletins, annees, comptes, anneesScolaires, parametres, connexions };
+  return { version: VERSION_DONNEES, eleves, parents, enseignants, classes, matieres, absences, creneaux, operations, remboursements, clotures, annonces, documents, journal, releves, bulletins, annees, comptes, anneesScolaires, parametres, connexions };
 }

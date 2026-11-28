@@ -1,11 +1,11 @@
-import { CalendarCheck2, CheckCircle2, Gavel, Pencil, Plus, Printer, Trash2 } from 'lucide-react';
+import { CalendarCheck2, CheckCircle2, Pencil, Plus, Printer, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Chiffre, Titre } from '@/components/espace';
 import { Button, EmptyState, IconButton, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
 import { entete, html, imprimer } from '@/lib/imprimer';
-import { BoutonsRetrait, Champ, ChoisirEleve, dateFr, Grille, Liste, ModalMotif, nomEleve, Note, Saisie, Zone } from './commun';
-import { jours, plages, typesSanction, type Absence, type Creneau, type Incident, type StatutAbsence, type TypeSanction } from './donnees';
+import { BoutonsRetrait, Champ, ChoisirEleve, dateFr, Grille, Liste, ModalMotif, nomEleve, Note, Saisie } from './commun';
+import { jours, plages, type Absence, type Creneau, type StatutAbsence } from './donnees';
 import { aujourdhui, useSecretariat, visibles } from './store';
 
 const tonAbsence: Record<StatutAbsence, 'stylo' | 'feutre' | 'valide'> = { non_justifiee: 'stylo', en_attente: 'feutre', justifiee: 'valide' };
@@ -141,99 +141,6 @@ function EditionAbsence({ a, onClose }: { a: Absence | null; onClose: () => void
           <Champ label="Statut"><Liste value={f.statut} onChange={(x) => setF({ ...f, statut: x.target.value as StatutAbsence })} options={Object.entries(libAbsence).map(([value, label]) => ({ value, label }))} /></Champ>
           <Champ label="Motif ou justificatif"><Saisie value={f.motif} onChange={(x) => setF({ ...f, motif: x.target.value })} /></Champ>
         </Grille>
-      </div>
-    </Modal>
-  );
-}
-
-/* =========================================================
- * Discipline
- * ======================================================= */
-const tonSanction: Record<TypeSanction, 'neutre' | 'feutre' | 'orange' | 'stylo' | 'encre'> = { Observation: 'neutre', Avertissement: 'feutre', Blâme: 'orange', Retenue: 'orange', 'Convocation des parents': 'encre', 'Exclusion temporaire': 'stylo' };
-
-export function Discipline() {
-  const { etat, modifier, retirer } = useSecretariat();
-  const toast = useToast();
-  const [nouveau, setNouveau] = useState(false);
-  const [filtre, setFiltre] = useState<'en_cours' | 'levee' | 'tous'>('en_cours');
-  const el = (id: number) => etat.eleves.find((e) => e.id === id);
-  const tous = visibles(etat.incidents);
-  const liste = tous.filter((i) => filtre === 'tous' || i.statut === filtre).sort((a, b) => b.date.localeCompare(a.date));
-
-  const convocation = (i: Incident) => {
-    const e = el(i.eleveId)!;
-    imprimer('Convocation des parents', `${entete('Convocation des parents')}
-      <p>À l’attention de <b>${html(e.tuteur)}</b>, ${html(e.lien.toLowerCase())} de l’élève <b>${html(nomEleve(e))}</b>, classe de ${html(e.classe)}.</p>
-      <p>Vous êtes prié(e) de vous présenter au secrétariat de l’établissement dans les meilleurs délais, au sujet de : <b>${html(i.type)}</b> du ${dateFr(i.date)}.</p>
-      <div class="encadre">Motif : ${html(i.motif)}${i.duree ? `<br/>Durée : ${html(i.duree)}` : ''}<br/>Décision : ${html(i.decidePar)}</div>
-      <div class="signature"><div>Le parent ou tuteur<div class="ligne"></div></div><div>Le Surveillant général<div class="ligne"></div></div></div>`);
-  };
-
-  return (
-    <>
-      <Titre titre="Discipline" texte="Avertissements, blâmes, retenues, exclusions et convocations des parents. Chaque décision garde son auteur et sa date." action={<Button icon={Plus} onClick={() => setNouveau(true)}>Enregistrer une sanction</Button>} />
-      <section className="rounded-[22px] bg-white shadow-feuille">
-        <div className="p-5 sm:p-6">
-          <Segmented label="Filtre" value={filtre} onChange={setFiltre} options={[{ value: 'en_cours', label: 'En cours', count: tous.filter((i) => i.statut === 'en_cours').length }, { value: 'levee', label: 'Levées' }, { value: 'tous', label: 'Toutes', count: tous.length }]} />
-        </div>
-        {liste.length === 0 ? <EmptyState icon={Gavel} title="Aucune sanction" text="Aucune sanction dans cette liste." /> : (
-          <Table caption="Sanctions" head={['Date', 'Élève', 'Sanction', 'Motif', 'Décidée par', { label: 'Actions', sr: true }]} minWidth={900}>
-            {liste.map((i) => {
-              const e = el(i.eleveId);
-              return (
-                <tr key={i.id}>
-                  <Td className="whitespace-nowrap chiffres">{dateFr(i.date)}</Td>
-                  <Td><p className="font-semibold">{e && nomEleve(e)}</p><p className="text-xs text-encre-doux">{e?.classe}</p></Td>
-                  <Td><Pill tone={tonSanction[i.type]}>{i.type}</Pill>{i.duree && <p className="mt-1 text-xs text-encre-doux">{i.duree}</p>}</Td>
-                  <Td className="max-w-72"><p className="line-clamp-2">{i.motif}</p></Td>
-                  <Td>{i.decidePar}<p className="text-xs text-encre-doux">saisie : {i.auteur}</p></Td>
-                  <Td className="text-right">
-                    <div className="flex items-center justify-end">
-                      <IconButton icon={Printer} label="Imprimer la convocation" onClick={() => convocation(i)} />
-                      {i.statut === 'en_cours' && <Button size="sm" variant="quiet" onClick={() => {
-                        modifier('incidents', i.id, { statut: 'levee' }, { operation: 'Levée', module: 'Discipline', element: `${i.type}, ${e && nomEleve(e)}`, avant: 'En cours', apres: 'Levée' });
-                        toast('Sanction levée.');
-                      }}>Lever</Button>}
-                      <BoutonsRetrait quoi="cette sanction" onRetirer={(mode, motif) => (retirer('incidents', i.id, mode, motif, { module: 'Discipline', element: `${i.type}, ${e && nomEleve(e)}` }), toast('Fait. L’administrateur peut restaurer cette sanction.'))} />
-                    </div>
-                  </Td>
-                </tr>
-              );
-            })}
-          </Table>
-        )}
-      </section>
-      {nouveau && <NouvelleSanction onClose={() => setNouveau(false)} />}
-    </>
-  );
-}
-
-function NouvelleSanction({ onClose }: { onClose: () => void }) {
-  const { etat, ajouter, utilisateur } = useSecretariat();
-  const toast = useToast();
-  const [f, setF] = useState({ eleveId: null as number | null, type: 'Avertissement' as TypeSanction, date: aujourdhui(), motif: '', duree: '', decidePar: 'Surveillant général' });
-  const [essai, setEssai] = useState(false);
-  const avecDuree = f.type === 'Retenue' || f.type === 'Exclusion temporaire';
-  const ok = f.eleveId && f.motif.trim().length >= 5 && f.decidePar.trim() && (!avecDuree || f.duree.trim());
-  const e = etat.eleves.find((x) => x.id === f.eleveId);
-  return (
-    <Modal title="Enregistrer une sanction" onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button onClick={() => {
-      setEssai(true);
-      if (!ok || !e) return;
-      ajouter('incidents', { eleveId: e.id, type: f.type, date: f.date, motif: f.motif.trim(), duree: avecDuree ? f.duree.trim() : undefined, decidePar: f.decidePar.trim(), statut: 'en_cours', auteur: utilisateur, etat: 'actif' }, { operation: 'Sanction', module: 'Discipline', element: `${f.type} : ${nomEleve(e)} (${e.classe})`, motif: f.motif.trim() });
-      toast('Sanction enregistrée. Le parent sera prévenu par le serveur.');
-      onClose();
-    }}>Enregistrer</Button></>}>
-      <div className="space-y-4">
-        <ChoisirEleve valeur={f.eleveId} onChange={(id) => setF({ ...f, eleveId: id })} />
-        {essai && !f.eleveId && <p className="text-[13px] font-medium text-stylo">Choisissez un élève.</p>}
-        <Grille>
-          <Champ label="Sanction"><Liste value={f.type} onChange={(x) => setF({ ...f, type: x.target.value as TypeSanction })} options={[...typesSanction]} /></Champ>
-          <Champ label="Date"><Saisie type="date" max={aujourdhui()} value={f.date} onChange={(x) => setF({ ...f, date: x.target.value })} /></Champ>
-          {avecDuree && <Champ label="Durée" erreur={essai && !f.duree.trim() && 'Indiquez la durée.'}><Saisie value={f.duree} onChange={(x) => setF({ ...f, duree: x.target.value })} placeholder={f.type === 'Retenue' ? '2 heures, samedi' : '3 jours'} /></Champ>}
-          <Champ label="Décidée par"><Saisie value={f.decidePar} onChange={(x) => setF({ ...f, decidePar: x.target.value })} /></Champ>
-        </Grille>
-        <Champ label="Motif (obligatoire)" erreur={essai && f.motif.trim().length < 5 && 'Décrivez les faits (5 caractères au moins).'}><Zone value={f.motif} onChange={(x) => setF({ ...f, motif: x.target.value })} placeholder="Décrivez les faits" /></Champ>
       </div>
     </Modal>
   );

@@ -11,7 +11,7 @@ import { useSecretariat } from '../secretariat/store';
 /* =========================================================
  * Éléments masqués ou supprimés (toutes les listes de l'école)
  * ======================================================= */
-type CleRetirable = 'eleves' | 'parents' | 'enseignants' | 'classes' | 'matieres' | 'absences' | 'incidents' | 'annonces';
+type CleRetirable = 'eleves' | 'parents' | 'enseignants' | 'classes' | 'matieres' | 'absences' | 'annonces';
 export interface Retire {
   cle: CleRetirable;
   id: number;
@@ -37,7 +37,6 @@ function retiresDe(etat: Etat): Retire[] {
   ajouter('classes', 'Classe', etat.classes, (x: Etat['classes'][number]) => x.nom);
   ajouter('matieres', 'Matière', etat.matieres, (x: Etat['matieres'][number]) => `${x.nom} (${x.classe})`);
   ajouter('absences', 'Absence', etat.absences, (x: Etat['absences'][number]) => `${nomE(x.eleveId)}, ${x.date.split('-').reverse().join('/')}`);
-  ajouter('incidents', 'Sanction', etat.incidents, (x: Etat['incidents'][number]) => `${x.type} · ${nomE(x.eleveId)}`);
   ajouter('annonces', 'Annonce', etat.annonces, (x: Etat['annonces'][number]) => x.titre);
   return r.sort((a, b) => b.le.localeCompare(a.le));
 }

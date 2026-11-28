@@ -27,7 +27,7 @@ import { Caisse as CaisseSecretariat, Cloture, Depenses, Remboursements as Rembo
 import Inscriptions from './pages/secretariat/Inscriptions';
 import { Enseignants, Parents } from './pages/secretariat/Personnes';
 import { Annees, Classes as ClassesSecretariat, Matieres } from './pages/secretariat/Structure';
-import { Absences as AbsencesSecretariat, Discipline, EmploisDuTemps } from './pages/secretariat/VieScolaire';
+import { Absences as AbsencesSecretariat, EmploisDuTemps } from './pages/secretariat/VieScolaire';
 import Connexion from './pages/public/Connexion';
 import ConnexionEcole from './pages/public/ConnexionEcole';
 import MotDePasseOublie from './pages/public/MotDePasseOublie';
@@ -74,7 +74,6 @@ export default function App() {
               <Route path="/secretariat/matieres" element={<Garde droit="matieres"><Matieres /></Garde>} />
               <Route path="/secretariat/annees" element={<Garde droit="archives"><Annees /></Garde>} />
               <Route path="/secretariat/absences" element={<Garde droit="absences"><AbsencesSecretariat /></Garde>} />
-              <Route path="/secretariat/discipline" element={<Garde droit="discipline"><Discipline /></Garde>} />
               <Route path="/secretariat/emplois-du-temps" element={<Garde droit="emplois"><EmploisDuTemps /></Garde>} />
               <Route path="/secretariat/notes-bulletins" element={<Garde droit={['notes', 'bulletins']}><NotesBulletinsSecretariat /></Garde>} />
               <Route path="/secretariat/notes" element={<Navigate to="/secretariat/notes-bulletins" replace />} />
@@ -109,7 +108,6 @@ export default function App() {
               <Route path="/direction/profil" element={<MonProfil />} />
               <Route path="/direction/inscriptions" element={<Inscriptions />} />
               <Route path="/direction/absences" element={<AbsencesSecretariat />} />
-              <Route path="/direction/discipline" element={<Discipline />} />
               <Route path="/direction/emplois-du-temps" element={<EmploisDuTemps />} />
               <Route path="/direction/depenses" element={<Depenses />} />
               <Route path="/direction/remboursements" element={<RemboursementsSecretariat />} />

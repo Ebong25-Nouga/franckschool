@@ -161,7 +161,6 @@ function FicheEleve({ e, onClose }: { e: EleveS; onClose: () => void }) {
   const parents = etat.parents.filter((p) => e.parentIds.includes(p.id) && p.etat === 'actif');
   const paiements = etat.operations.filter((o) => o.eleveId === e.id && (o.type === 'recette' || o.type === 'remboursement'));
   const absences = visibles(etat.absences).filter((a) => a.eleveId === e.id);
-  const incidents = visibles(etat.incidents).filter((i) => i.eleveId === e.id);
   const reste = Math.max(0, e.du - e.paye);
   const parti = e.situation === 'parti';
 
@@ -250,7 +249,6 @@ function FicheEleve({ e, onClose }: { e: EleveS; onClose: () => void }) {
         <Section titre="Résultats et vie scolaire">
           <Ligne k="Moyenne de la séquence 2" v={<span><Grade value={e.moyenne} size="sm" /> · {appreciation(e.moyenne)}</span>} />
           <Ligne k="Absences et retards" v={String(absences.length)} />
-          <Ligne k="Sanctions" v={incidents.length ? incidents.map((i) => i.type).join(', ') : 'Aucune'} />
         </Section>
       </div>
 
