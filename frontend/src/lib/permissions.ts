@@ -43,8 +43,8 @@ export const DROITS_SECRETAIRE: GroupeDroits[] = [
   {
     titre: 'Évaluations',
     droits: [
-      { code: 'notes', libelle: 'Notes', detail: 'Consulter les notes et relancer les enseignants (la validation reste à l’administrateur)' },
-      { code: 'bulletins', libelle: 'Bulletins', detail: 'Générer et imprimer les bulletins' },
+      { code: 'notes', libelle: 'Suivi des notes', detail: 'Voir l’avancement des notes et relancer les enseignants (la validation reste à l’administrateur)' },
+      { code: 'bulletins', libelle: 'Bulletins', detail: 'Générer, imprimer et publier les bulletins aux parents' },
     ],
   },
   {

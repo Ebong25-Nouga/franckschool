@@ -29,7 +29,8 @@ interface Api {
   annulerOperation: (id: number, motif: string) => void;
   depenser: (p: { libelle: string; categorie: string; beneficiaire: string; montant: number; mode: Mode; reference?: string; justificatif: string }) => Operation;
   executerRemboursement: (id: number, mode: Mode) => void;
-  marquerBulletins: (cle: string, classe: string, periode: string) => void;
+  /** Générer puis publier les bulletins d'une classe pour une période. */
+  etatBulletins: (classe: string, periode: string, statut: 'genere' | 'publie') => void;
   numeroDocument: (prefixe: string) => string;
   reinitialiser: () => void;
 }
@@ -143,8 +144,12 @@ export function SecretariatProvider({ children }: { children: ReactNode }) {
           { operation: 'Exécution', module: 'Remboursements', element: `${op.numero} · ${d.montant.toLocaleString('fr-FR')} FCFA · ${d.eleve}`, elementId: id, avant: 'Approuvée', apres: `Exécutée (${mode})` },
         );
       },
-      marquerBulletins: (cle, classe, periode) =>
-        appliquer((e) => ({ ...e, bulletins: e.bulletins.includes(cle) ? e.bulletins : [...e.bulletins, cle] }), { operation: 'Génération', module: 'Bulletins', element: `Bulletins ${classe}, ${periode}` }),
+      etatBulletins: (classe, periode, statut) =>
+        appliquer((e) => ({ ...e, bulletins: { ...e.bulletins, [`${classe}|${periode}`]: { statut, le: isoMinute(new Date()), par: utilisateur } } }), {
+          operation: statut === 'genere' ? 'Génération' : 'Publication aux parents',
+          module: 'Bulletins',
+          element: `Bulletins ${classe}, ${periode}`,
+        }),
       numeroDocument: (prefixe) => `${prefixe}-${new Date().getFullYear()}-${String(prochainId(ref.current.documents) + 40).padStart(4, '0')}`,
       reinitialiser: () => {
         const e = etatInitial();

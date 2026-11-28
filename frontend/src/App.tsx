@@ -23,7 +23,7 @@ import { Annonces, Documents, Statistiques as StatistiquesSecretariat } from './
 import { MonActivite, MonCompte } from './pages/secretariat/Compte';
 import ElevesSecretariat from './pages/secretariat/Eleves';
 import EspaceSecretaire, { Garde } from './pages/secretariat/EspaceSecretaire';
-import { Bulletins as BulletinsSecretariat, Notes as NotesSecretariat } from './pages/secretariat/Evaluations';
+import { NotesBulletins as NotesBulletinsSecretariat } from './pages/secretariat/Evaluations';
 import { Caisse as CaisseSecretariat, Cloture, Depenses, Remboursements as RemboursementsSecretariat } from './pages/secretariat/Finances';
 import Inscriptions from './pages/secretariat/Inscriptions';
 import { Enseignants, Parents } from './pages/secretariat/Personnes';
@@ -77,8 +77,9 @@ export default function App() {
               <Route path="/secretariat/absences" element={<Garde droit="absences"><AbsencesSecretariat /></Garde>} />
               <Route path="/secretariat/discipline" element={<Garde droit="discipline"><Discipline /></Garde>} />
               <Route path="/secretariat/emplois-du-temps" element={<Garde droit="emplois"><EmploisDuTemps /></Garde>} />
-              <Route path="/secretariat/notes" element={<Garde droit="notes"><NotesSecretariat /></Garde>} />
-              <Route path="/secretariat/bulletins" element={<Garde droit="bulletins"><BulletinsSecretariat /></Garde>} />
+              <Route path="/secretariat/notes-bulletins" element={<Garde droit={['notes', 'bulletins']}><NotesBulletinsSecretariat /></Garde>} />
+              <Route path="/secretariat/notes" element={<Navigate to="/secretariat/notes-bulletins" replace />} />
+              <Route path="/secretariat/bulletins" element={<Navigate to="/secretariat/notes-bulletins" replace />} />
               <Route path="/secretariat/caisse" element={<Garde droit="caisse"><CaisseSecretariat /></Garde>} />
               <Route path="/secretariat/depenses" element={<Garde droit="depenses"><Depenses /></Garde>} />
               <Route path="/secretariat/remboursements" element={<Garde droit="remboursements"><RemboursementsSecretariat /></Garde>} />

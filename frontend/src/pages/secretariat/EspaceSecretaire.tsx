@@ -4,7 +4,6 @@ import {
   Banknote,
   BarChart3,
   BookMarked,
-  BookOpenCheck,
   CalendarCheck2,
   CalendarDays,
   ChevronRight,
@@ -44,7 +43,8 @@ interface Lien {
   to: string;
   label: string;
   icon: LucideIcon;
-  droit?: string;
+  /** Un droit, ou plusieurs (il suffit d'en avoir un) */
+  droit?: string | string[];
   badge?: number;
 }
 interface Groupe {
@@ -82,8 +82,7 @@ function useMenu(): Groupe[] {
     {
       titre: 'Évaluations',
       liens: [
-        { to: '/secretariat/notes', label: 'Notes', icon: BookOpenCheck, droit: 'notes' },
-        { to: '/secretariat/bulletins', label: 'Bulletins', icon: FileBadge2, droit: 'bulletins' },
+        { to: '/secretariat/notes-bulletins', label: 'Notes et bulletins', icon: FileBadge2, droit: ['notes', 'bulletins'] },
       ],
     },
     {
@@ -111,7 +110,7 @@ function useMenu(): Groupe[] {
       ],
     },
   ];
-  return groupes.map((g) => ({ ...g, liens: g.liens.filter((l) => !l.droit || peut(l.droit)) })).filter((g) => g.liens.length);
+  return groupes.map((g) => ({ ...g, liens: g.liens.filter((l) => !l.droit || [l.droit].flat().some(peut)) })).filter((g) => g.liens.length);
 }
 
 function Navigation({ sombre, onNavigate }: { sombre?: boolean; onNavigate?: () => void }) {
@@ -333,19 +332,21 @@ export default function EspaceSecretaire() {
  * Protection d'une page par un droit.
  * Taper l'adresse d'une page sans le droit affiche « Accès refusé » (le menu ne suffit pas).
  */
-export function Garde({ droit, children }: { droit: string; children: ReactNode }) {
+export function Garde({ droit, children }: { droit: string | string[]; children: ReactNode }) {
   const peut = useDroit();
   const nav = useNavigate();
   const loc = useLocation();
   const { journaliser } = useSecretariat();
-  const autorise = peut(droit);
+  const droits = [droit].flat();
+  const autorise = droits.some(peut);
+  const nomDroit = droits.map(libelleDroit).join(' » ou « ');
   const note = useRef(false);
   // La tentative est inscrite au journal : l'administrateur la verra
   useEffect(() => {
     if (autorise || note.current) return;
     note.current = true;
-    journaliser({ operation: 'Accès refusé', module: libelleDroit(droit), element: `Tentative d’ouverture de ${loc.pathname}` });
-  }, [autorise, droit, loc.pathname, journaliser]);
+    journaliser({ operation: 'Accès refusé', module: nomDroit, element: `Tentative d’ouverture de ${loc.pathname}` });
+  }, [autorise, nomDroit, loc.pathname, journaliser]);
   if (autorise) return children;
   return (
     <div className="mx-auto max-w-lg py-16 text-center">
@@ -354,7 +355,7 @@ export function Garde({ droit, children }: { droit: string; children: ReactNode 
       </span>
       <h1 className="mt-5 font-display text-[28px] font-bold tracking-[-0.02em]">Accès refusé</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-encre-doux">
-        Vous n’avez pas le droit « {libelleDroit(droit)} ». Seul l’administrateur de l’établissement peut vous l’attribuer.
+        Vous n’avez pas le droit « {nomDroit} ». Seul l’administrateur de l’établissement peut vous l’attribuer.
       </p>
       <p className="mx-auto mt-4 flex max-w-sm items-center justify-center gap-2 text-[13px] text-encre-pale">
         <ShieldCheck className="size-4" aria-hidden /> Cette tentative n’a rien modifié. Elle est notée dans le journal.

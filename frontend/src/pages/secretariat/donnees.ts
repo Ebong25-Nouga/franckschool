@@ -201,17 +201,25 @@ export interface AnneePassee {
   recettes: number;
   eleves: AncienEleve[];
 }
+/** Saisie des notes d'une matière, dans une classe, pour une séquence (1 à 6). */
+export type StatutReleve = 'non_commencee' | 'brouillon' | 'soumise' | 'validee';
 export interface Releve {
   id: number;
   classe: string;
   matiere: string;
   prof: string;
-  type: string;
-  statut: 'brouillon' | 'soumise' | 'validee';
+  sequence: number;
+  evaluations: string[];
+  statut: StatutReleve;
   notes: number;
   attendu: number;
-  moyenne: number;
   relance?: string;
+}
+/** État des bulletins d'une classe pour une période (clé « classe|période »). */
+export interface EtatBulletin {
+  statut: 'genere' | 'publie';
+  le: string;
+  par: string;
 }
 
 export interface Etat {
@@ -231,12 +239,12 @@ export interface Etat {
   documents: DocumentGenere[];
   journal: EntreeJournal[];
   releves: Releve[];
-  bulletins: string[];
+  bulletins: Record<string, EtatBulletin>;
   annees: AnneePassee[];
 }
 
 /* ---------------- Dates ---------------- */
-export const VERSION_DONNEES = 2;
+export const VERSION_DONNEES = 3;
 const pad = (n: number, l = 2) => String(n).padStart(l, '0');
 export const isoJour = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const isoMinute = (d: Date) => `${isoJour(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -382,17 +390,28 @@ export function etatInitial(): Etat {
     { id: 2, numero: 'LC-2026-0012', type: 'Liste de classe', cible: '3ème A', auteur: 'Paul Biyong', date: isoMinute(ilYa(5, 9, 40)) },
   ];
 
+  // Séquence 1 : tout est validé. Séquence 2 : en cours (6ème A, 5ème A et 4ème A déjà complètes).
+  let idRel = 1;
   const releves: Releve[] = nomsClasses.flatMap((classe, ci) =>
     matieres
       .filter((m) => m.classe === classe)
-      .slice(0, 6)
-      .map((m, mi) => {
-        const attendu = Math.round(35 + ((ci * 7) % 16));
-        const k = (ci + mi) % 5;
-        const statut = ci === 0 ? 'validee' : k === 0 ? 'brouillon' : k < 3 ? 'validee' : 'soumise';
-        return { id: ci * 10 + mi + 1, classe, matiere: m.nom, prof: m.prof, type: k % 2 ? 'Devoir surveillé' : 'Composition', statut, notes: statut === 'brouillon' ? Math.round(attendu * 0.4) : attendu, attendu, moyenne: 9 + ((ci * 3 + mi * 5) % 70) / 10 } as Releve;
+      .flatMap((m, mi) => {
+        const attendu = eleves.filter((e) => e.classe === classe).length;
+        const k = (ci * 3 + mi) % 7;
+        const complete = ['6ème A', '5ème A', '4ème A'].includes(classe);
+        const s2: StatutReleve = complete ? 'validee' : k === 0 ? 'non_commencee' : k === 1 ? 'brouillon' : k === 2 ? 'soumise' : 'validee';
+        const evals = mi % 2 ? ['Devoir surveillé', 'Composition'] : ['Composition'];
+        return [
+          { id: idRel++, classe, matiere: m.nom, prof: m.prof, sequence: 1, evaluations: evals, statut: 'validee' as StatutReleve, notes: attendu, attendu },
+          { id: idRel++, classe, matiere: m.nom, prof: m.prof, sequence: 2, evaluations: s2 === 'non_commencee' ? [] : evals, statut: s2, notes: s2 === 'non_commencee' ? 0 : s2 === 'brouillon' ? Math.ceil(attendu / 2) : attendu, attendu },
+        ];
       }),
   );
+  const bulletins: Record<string, EtatBulletin> = Object.fromEntries([
+    ...nomsClasses.map((c) => [`${c}|Séquence 1`, { statut: 'publie', le: isoMinute(ilYa(40, 15, 0)), par: 'Nadine Ekotto' }]),
+    ['5ème A|Séquence 2', { statut: 'genere', le: isoMinute(ilYa(1, 16, 20)), par: 'Paul Biyong' }],
+    ['4ème A|Séquence 2', { statut: 'publie', le: isoMinute(ilYa(2, 11, 5)), par: 'Nadine Ekotto' }],
+  ]);
 
   const anciens: AncienEleve[] = Array.from({ length: 14 }, (_, i) => {
     const f = i % 2 === 1;
@@ -432,5 +451,5 @@ export function etatInitial(): Etat {
     { id: 6, quand: isoMinute(ilYa(2, 15, 30)), utilisateur: 'Nadine Ekotto', role: 'Secrétaire', etablissement: 'Les Étoiles', operation: 'Demande', module: 'Remboursements', element: `25 000 FCFA · ${el(6).nom} ${el(6).prenom}`, motif: "Départ de l'établissement (mutation des parents à Garoua)." },
   ];
 
-  return { version: VERSION_DONNEES, eleves, parents, enseignants, classes, matieres, absences, incidents, creneaux, operations, remboursements, clotures, annonces, documents, journal, releves, bulletins: [], annees };
+  return { version: VERSION_DONNEES, eleves, parents, enseignants, classes, matieres, absences, incidents, creneaux, operations, remboursements, clotures, annonces, documents, journal, releves, bulletins, annees };
 }
