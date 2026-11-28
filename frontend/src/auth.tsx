@@ -9,6 +9,7 @@ export type Espace = 'super' | 'admin' | 'secretaire' | 'prof' | 'parent';
 
 export interface Session {
   espace: Espace;
+  email?: string;
   nom: string;
   fonction: string;
   permissions: string[];
@@ -30,7 +31,7 @@ export const comptesDemo: Record<string, Session> = {
 
 export const accueilParEspace: Record<Espace, string> = {
   super: '/plateforme',
-  admin: '/etablissement',
+  admin: '/direction',
   secretaire: '/secretariat',
   prof: '/enseignant',
   parent: '/parent',
@@ -38,13 +39,37 @@ export const accueilParEspace: Record<Espace, string> = {
 
 const Ctx = createContext<{ session: Session | null; connexion: (email: string) => Session | null; deconnexion: () => void }>(null!);
 
+/**
+ * Démo : les comptes secrétaires sont gérés par l'administrateur (données de l'école, dans le navigateur).
+ * Ses droits et l'état actif / désactivé remplacent ceux du compte de test.
+ * Avec Laravel, le serveur renverra directement les droits à la connexion.
+ */
+function compteEcole(email: string): { actif: boolean; droits: string[] } | null {
+  try {
+    const v = localStorage.getItem('fs.secretariat');
+    if (!v) return null;
+    const c = (JSON.parse(v) as { comptes?: { email: string; actif: boolean; droits: string[] }[] }).comptes?.find((x) => x.email === email);
+    return c ? { actif: c.actif, droits: c.droits } : null;
+  } catch {
+    return null;
+  }
+}
+function avecDroitsEcole(email: string, s: Session): Session | null {
+  if (s.espace !== 'secretaire') return { ...s, email };
+  const c = compteEcole(email);
+  if (!c) return { ...s, email };
+  return c.actif ? { ...s, email, permissions: c.droits } : null;
+}
+
 function lire(): Session | null {
   try {
     const v = localStorage.getItem('fs.session');
     if (!v) return null;
     const s = JSON.parse(v) as Session;
-    // Démo : on reprend les droits à jour du compte de test (ils ont pu changer depuis la dernière connexion)
-    return Object.values(comptesDemo).find((c) => c.nom === s.nom && c.espace === s.espace) ?? s;
+    // Démo : on reprend les droits à jour (l'administrateur a pu les changer depuis la dernière connexion)
+    const email = s.email ?? Object.entries(comptesDemo).find(([, c]) => c.nom === s.nom && c.espace === s.espace)?.[0];
+    const base = email ? comptesDemo[email] : undefined;
+    return email && base ? avecDroitsEcole(email, base) : s;
   } catch {
     return null;
   }
@@ -53,7 +78,8 @@ function lire(): Session | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(lire);
   const connexion = (email: string) => {
-    const s = comptesDemo[email.trim().toLowerCase()] ?? null;
+    const cle = email.trim().toLowerCase();
+    const s = comptesDemo[cle] ? avecDroitsEcole(cle, comptesDemo[cle]) : null;
     setSession(s);
     try {
       if (s) localStorage.setItem('fs.session', JSON.stringify(s));

@@ -6,7 +6,7 @@ import { Bloc, Chiffre, Titre } from '@/components/espace';
 import { Avatar, Button, Grade, Modal, Pill, Segmented, Table, Td, useToast } from '@/components/kit';
 import { ecole } from '@/data/demo';
 import { entete, html, imprimer } from '@/lib/imprimer';
-import { Champ, ChoisirEleve, dateFr, Grille, Liste, montant, nomEleve, Note, Saisie, useDroit } from './commun';
+import { Champ, ChoisirEleve, dateFr, Grille, Liste, montant, nomEleve, Note, Saisie, useDroit, espaceCourant } from './commun';
 import type { AncienEleve, EleveS } from './donnees';
 import { aujourdhui, useSecretariat, visibles } from './store';
 
@@ -161,7 +161,7 @@ function NouvelleInscription() {
           )}
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <Button variant="secondary" icon={Printer} onClick={() => ficheInscription(fait, fait.tuteur, fait.telephone)}>Imprimer la fiche</Button>
-            {peut('caisse') && <Link to={`/secretariat/caisse?encaisser=1&eleve=${fait.id}`}><Button icon={Banknote}>Encaisser les frais d’inscription</Button></Link>}
+            {peut('caisse') && <Link to={`${espaceCourant()}/caisse?encaisser=1&eleve=${fait.id}`}><Button icon={Banknote}>Encaisser les frais d’inscription</Button></Link>}
             <Button variant="ghost" onClick={() => { setFait(null); setF({ ...vide, classe: f.classe }); setEssai(false); }}>Inscrire un autre élève</Button>
           </div>
         </div>

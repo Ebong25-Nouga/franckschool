@@ -4,19 +4,18 @@ import { AuthProvider, accueilParEspace, useAuth, type Espace } from './auth';
 import AppShell from './components/AppShell';
 import { ToastProvider } from './components/kit';
 import { Toaster } from './components/ui/sonner';
-import { Parametres, Utilisateurs } from './pages/etablissement/Administration';
-import Caisse from './pages/etablissement/Caisse';
-import { Classes, Professeurs } from './pages/etablissement/ClassesProfesseurs';
-import Eleves from './pages/etablissement/Eleves';
-import { Absences, Bulletins, ValidationNotes } from './pages/etablissement/Evaluations';
-import Remboursements from './pages/etablissement/Remboursements';
-import TableauDeBord from './pages/etablissement/TableauDeBord';
 import { EnAttenteValidation, MoyennesMatiere, ResultatsClasse, SuiviSaisies } from './pages/enseignant/ClassePrincipale';
 import EspaceEnseignant from './pages/enseignant/EspaceEnseignant';
 import * as Ens from './pages/enseignant/PagesEnseignant';
 import EspaceParent from './pages/parent/EspaceParent';
 import { Accueil as AccueilParent, InformationsScolaires, MesEnfants, NotesBulletins, Notifications as NotificationsParent, PaiementsHistorique, ParametresCompte, Recus } from './pages/parent/PagesParent';
 import { Abonnements, Journal, ListeEtablissements, Statistiques, TableauPlateforme } from './pages/plateforme/Plateforme';
+import EspaceDirection from './pages/direction/EspaceDirection';
+import Historique from './pages/direction/Historique';
+import NotesValidation from './pages/direction/NotesValidation';
+import { AnneesScolaires, MonProfil, NotificationsDirection, Parametres as ParametresDirection } from './pages/direction/PagesDirection';
+import Secretaires from './pages/direction/Secretaires';
+import TableauDeBordDirection from './pages/direction/TableauDeBord';
 import Accueil from './pages/public/Accueil';
 import AccueilSecretariat from './pages/secretariat/Accueil';
 import { Annonces, Documents, Statistiques as StatistiquesSecretariat } from './pages/secretariat/Communication';
@@ -91,20 +90,36 @@ export default function App() {
               <Route path="/secretariat/compte" element={<MonCompte />} />
             </Route>
 
-            {/* Interface 3b — Administration de l'établissement (sera refaite après validation du secrétariat) */}
-            <Route element={<Protege espaces={['admin']}><AppShell /></Protege>}>
-              <Route path="/etablissement" element={<TableauDeBord />} />
-              <Route path="/etablissement/eleves" element={<Eleves />} />
-              <Route path="/etablissement/classes" element={<Classes />} />
-              <Route path="/etablissement/professeurs" element={<Professeurs />} />
-              <Route path="/etablissement/absences" element={<Absences />} />
-              <Route path="/etablissement/notes" element={<ValidationNotes />} />
-              <Route path="/etablissement/bulletins" element={<Bulletins />} />
-              <Route path="/etablissement/caisse" element={<Caisse />} />
-              <Route path="/etablissement/remboursements" element={<Remboursements />} />
-              <Route path="/etablissement/utilisateurs" element={<Utilisateurs />} />
-              <Route path="/etablissement/parametres" element={<Parametres />} />
+            {/* Interface 3b — Espace direction (administrateur de l'établissement, cahier du 28/11/2026) */}
+            <Route element={<Protege espaces={['admin']}><EspaceDirection /></Protege>}>
+              <Route path="/direction" element={<TableauDeBordDirection />} />
+              <Route path="/direction/eleves" element={<ElevesSecretariat />} />
+              <Route path="/direction/enseignants" element={<Enseignants />} />
+              <Route path="/direction/secretaires" element={<Secretaires />} />
+              <Route path="/direction/classes" element={<ClassesSecretariat />} />
+              <Route path="/direction/matieres" element={<Matieres />} />
+              <Route path="/direction/parents" element={<Parents />} />
+              <Route path="/direction/notes" element={<NotesValidation />} />
+              <Route path="/direction/resultats" element={<NotesBulletinsSecretariat direction />} />
+              <Route path="/direction/caisse" element={<CaisseSecretariat />} />
+              <Route path="/direction/annees-scolaires" element={<AnneesScolaires />} />
+              <Route path="/direction/notifications" element={<NotificationsDirection />} />
+              <Route path="/direction/historique" element={<Historique />} />
+              <Route path="/direction/parametres" element={<ParametresDirection />} />
+              <Route path="/direction/profil" element={<MonProfil />} />
+              <Route path="/direction/inscriptions" element={<Inscriptions />} />
+              <Route path="/direction/absences" element={<AbsencesSecretariat />} />
+              <Route path="/direction/discipline" element={<Discipline />} />
+              <Route path="/direction/emplois-du-temps" element={<EmploisDuTemps />} />
+              <Route path="/direction/depenses" element={<Depenses />} />
+              <Route path="/direction/remboursements" element={<RemboursementsSecretariat />} />
+              <Route path="/direction/cloture" element={<Cloture />} />
+              <Route path="/direction/documents" element={<Documents />} />
+              <Route path="/direction/statistiques" element={<StatistiquesSecretariat />} />
+              <Route path="/direction/annees" element={<Annees />} />
             </Route>
+            {/* Ancien espace commun remplacé par /direction */}
+            <Route path="/etablissement/*" element={<Navigate to="/direction" replace />} />
 
             {/* Interface 4 — Espace enseignant (structure validée le 25/11/2026) */}
             <Route element={<Protege espaces={['prof']}><EspaceEnseignant /></Protege>}>

@@ -5,7 +5,7 @@ import { Titre } from '@/components/espace';
 import { Avatar, Button, Drawer, EmptyState, Gauge, Grade, IconButton, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
 import { appreciation } from '@/data/demo';
 import { entete, html, imprimer } from '@/lib/imprimer';
-import { BoutonsRetrait, Champ, dateFr, Grille, Liste, MenuActions, ModalMotif, montant, nomEleve, Pagination, Saisie, useDroit, Zone, type ActionMenu } from './commun';
+import { BoutonsRetrait, Champ, dateFr, Grille, Liste, MenuActions, ModalMotif, montant, nomEleve, Pagination, Saisie, useDroit, Zone, type ActionMenu, espaceCourant, chemin } from './commun';
 import type { EleveS, TypeDepart } from './donnees';
 import { aujourdhui, useSecretariat, visibles } from './store';
 
@@ -59,7 +59,7 @@ export default function Eleves() {
       <Titre
         titre="Élèves"
         texte="Recherchez un élève, ouvrez son dossier, modifiez-le, changez-le de classe ou enregistrez son départ."
-        action={peut('inscriptions') && <Link to="/secretariat/inscriptions"><Button icon={UserPlus}>Inscrire un élève</Button></Link>}
+        action={peut('inscriptions') && <Link to={chemin('/inscriptions')}><Button icon={UserPlus}>Inscrire un élève</Button></Link>}
       />
 
       <section className="rounded-[22px] bg-white shadow-feuille">
@@ -190,8 +190,8 @@ function FicheEleve({ e, onClose }: { e: EleveS; onClose: () => void }) {
           {!parti && peut('eleves') && <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setFenetre('modifier')}>Modifier</Button>}
           {!parti && peut('eleves') && <Button size="sm" variant="secondary" icon={ArrowRightLeft} onClick={() => setFenetre('classe')}>Changer de classe</Button>}
           {!parti && peut('eleves') && <Button size="sm" variant="secondary" icon={Sortie} onClick={() => setFenetre('depart')}>Enregistrer un départ</Button>}
-          {!parti && peut('caisse') && reste > 0 && <Link to={`/secretariat/caisse?encaisser=1&eleve=${e.id}`}><Button size="sm" icon={Banknote}>Encaisser</Button></Link>}
-          {peut('documents') && <Link to={`/secretariat/documents?eleve=${e.id}`}><Button size="sm" variant="secondary" icon={FileText}>Documents</Button></Link>}
+          {!parti && peut('caisse') && reste > 0 && <Link to={`${espaceCourant()}/caisse?encaisser=1&eleve=${e.id}`}><Button size="sm" icon={Banknote}>Encaisser</Button></Link>}
+          {peut('documents') && <Link to={`${espaceCourant()}/documents?eleve=${e.id}`}><Button size="sm" variant="secondary" icon={FileText}>Documents</Button></Link>}
           <div className="ml-auto flex">
             <BoutonsRetrait
               quoi="cet élève"

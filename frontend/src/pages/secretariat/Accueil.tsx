@@ -5,7 +5,7 @@ import { useAuth } from '@/auth';
 import { Bloc, Chiffre, Titre } from '@/components/espace';
 import { Avatar } from '@/components/kit';
 import { ecole } from '@/data/demo';
-import { dateHeureFr, montant, nombre, nomEleve, useDroit } from './commun';
+import { dateHeureFr, montant, nombre, nomEleve, useDroit, chemin } from './commun';
 import { isoJour } from './donnees';
 import { aujourdhui, useSecretariat, visibles } from './store';
 
@@ -37,17 +37,17 @@ export default function Accueil() {
   });
 
   const aFaire = [
-    peut('absences') && nonJustifiees > 0 && { texte: `${nonJustifiees} absence${nonJustifiees > 1 ? 's' : ''} ou retard${nonJustifiees > 1 ? 's' : ''} à justifier`, to: '/secretariat/absences' },
-    peut('remboursements') && aExecuter > 0 && { texte: `${aExecuter} remboursement${aExecuter > 1 ? 's' : ''} approuvé${aExecuter > 1 ? 's' : ''} à exécuter`, to: '/secretariat/remboursements' },
-    peut('clotures') && !clotureFaite && { texte: 'La caisse du jour n’est pas encore clôturée', to: '/secretariat/cloture' },
-    peut('caisse') && impayes > 0 && { texte: `${impayes} élèves ont un reste à payer`, to: '/secretariat/caisse?onglet=impayes' },
+    peut('absences') && nonJustifiees > 0 && { texte: `${nonJustifiees} absence${nonJustifiees > 1 ? 's' : ''} ou retard${nonJustifiees > 1 ? 's' : ''} à justifier`, to: chemin('/absences') },
+    peut('remboursements') && aExecuter > 0 && { texte: `${aExecuter} remboursement${aExecuter > 1 ? 's' : ''} approuvé${aExecuter > 1 ? 's' : ''} à exécuter`, to: chemin('/remboursements') },
+    peut('clotures') && !clotureFaite && { texte: 'La caisse du jour n’est pas encore clôturée', to: chemin('/cloture') },
+    peut('caisse') && impayes > 0 && { texte: `${impayes} élèves ont un reste à payer`, to: chemin('/caisse?onglet=impayes') },
   ].filter(Boolean) as { texte: string; to: string }[];
 
   const raccourcis = [
-    peut('caisse') && { label: 'Encaisser un paiement', to: '/secretariat/caisse?encaisser=1', icon: Banknote },
-    peut('inscriptions') && { label: 'Inscrire un élève', to: '/secretariat/inscriptions', icon: UserPlus },
-    peut('absences') && { label: 'Signaler une absence', to: '/secretariat/absences?nouvelle=1', icon: CalendarCheck2 },
-    peut('depenses') && { label: 'Enregistrer une dépense', to: '/secretariat/depenses?nouvelle=1', icon: Receipt },
+    peut('caisse') && { label: 'Encaisser un paiement', to: chemin('/caisse?encaisser=1'), icon: Banknote },
+    peut('inscriptions') && { label: 'Inscrire un élève', to: chemin('/inscriptions'), icon: UserPlus },
+    peut('absences') && { label: 'Signaler une absence', to: chemin('/absences?nouvelle=1'), icon: CalendarCheck2 },
+    peut('depenses') && { label: 'Enregistrer une dépense', to: chemin('/depenses?nouvelle=1'), icon: Receipt },
   ].filter(Boolean) as { label: string; to: string; icon: typeof Banknote }[];
 
   const mesOperations = etat.journal.filter((j) => j.utilisateur === utilisateur).slice(0, 6);
@@ -138,7 +138,7 @@ export default function Accueil() {
         </Bloc>
       </div>
 
-      <Bloc titre="Mes dernières opérations" className="mt-6" action={<Link to="/secretariat/activite" className="text-sm font-semibold text-brand-700 hover:underline">Tout voir</Link>}>
+      <Bloc titre="Mes dernières opérations" className="mt-6" action={<Link to={chemin('/activite')} className="text-sm font-semibold text-brand-700 hover:underline">Tout voir</Link>}>
         {mesOperations.length === 0 ? (
           <p className="text-sm text-encre-doux">Vous n’avez encore rien enregistré.</p>
         ) : (

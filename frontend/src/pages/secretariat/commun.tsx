@@ -265,3 +265,14 @@ export function MenuActions({ label, actions }: { label: string; actions: Action
     </>
   );
 }
+
+/* ---------- Espace courant : les pages communes servent au secrétariat ET à la direction ---------- */
+/** « /secretariat » ou « /direction », selon l'adresse en cours (fonctionne aussi en mode « #/… »). */
+// eslint-disable-next-line react-refresh/only-export-components
+export function espaceCourant() {
+  const adresse = window.location.hash ? window.location.hash.slice(1) : window.location.pathname;
+  return adresse.startsWith('/direction') ? '/direction' : '/secretariat';
+}
+/** Adresse d'une page dans l'espace courant, ex. chemin('/caisse'). */
+// eslint-disable-next-line react-refresh/only-export-components
+export const chemin = (page = '') => espaceCourant() + page;

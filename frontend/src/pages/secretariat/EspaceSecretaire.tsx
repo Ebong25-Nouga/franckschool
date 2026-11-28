@@ -36,10 +36,11 @@ import EnteteBureau, { type NotificationEntete, type ResultatRecherche } from '@
 import { Avatar, Button } from '@/components/kit';
 import { ecole } from '@/data/demo';
 import { libelleDroit } from '@/lib/permissions';
-import { nomEleve, useDroit } from './commun';
+import { appliquerTeinte } from '@/lib/teintes';
+import { chemin, nomEleve, useDroit } from './commun';
 import { aujourdhui, SecretariatProvider, useSecretariat, visibles } from './store';
 
-interface Lien {
+export interface Lien {
   to: string;
   label: string;
   icon: LucideIcon;
@@ -47,12 +48,12 @@ interface Lien {
   droit?: string | string[];
   badge?: number;
 }
-interface Groupe {
+export interface Groupe {
   titre?: string;
   liens: Lien[];
 }
 
-function useMenu(): Groupe[] {
+function useMenuSecretariat(): Groupe[] {
   const peut = useDroit();
   const { etat } = useSecretariat();
   const absencesATraiter = visibles(etat.absences).filter((a) => a.statut !== 'justifiee').length;
@@ -110,11 +111,27 @@ function useMenu(): Groupe[] {
       ],
     },
   ];
-  return groupes.map((g) => ({ ...g, liens: g.liens.filter((l) => !l.droit || [l.droit].flat().some(peut)) })).filter((g) => g.liens.length);
+  return filtrerMenu(groupes, peut);
 }
 
-function Navigation({ sombre, onNavigate }: { sombre?: boolean; onNavigate?: () => void }) {
-  const groupes = useMenu();
+/** Ne garde que les liens autorisés, et les groupes non vides. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const filtrerMenu = (groupes: Groupe[], peut: (d: string) => boolean) => groupes.map((g) => ({ ...g, liens: g.liens.filter((l) => !l.droit || [l.droit].flat().some(peut)) })).filter((g) => g.liens.length);
+
+function useNotificationsSecretariat(): NotificationEntete[] {
+  const { etat } = useSecretariat();
+  const peut = useDroit();
+  const jour = aujourdhui();
+  const notifications: NotificationEntete[] = [];
+  const absences = visibles(etat.absences).filter((a) => a.statut !== 'justifiee').length;
+  if (peut('absences') && absences) notifications.push({ id: 'abs' + absences, titre: 'Absences à justifier', texte: `${absences} absence(s) ou retard(s) attendent un justificatif.`, to: '/secretariat/absences' });
+  etat.remboursements.filter((r) => r.statut === 'approuvee').forEach((r) => peut('remboursements') && notifications.push({ id: 'rb' + r.id, titre: 'Remboursement approuvé', texte: `${r.montant.toLocaleString('fr-FR')} FCFA pour ${r.eleve} : à exécuter.`, to: '/secretariat/remboursements' }));
+  if (peut('clotures') && !etat.clotures.some((c) => c.date === jour)) notifications.push({ id: 'cl' + jour, titre: 'Clôture de caisse', texte: 'La caisse du jour n’est pas encore clôturée.', to: '/secretariat/cloture' });
+  visibles(etat.annonces).slice(0, 2).forEach((a) => notifications.push({ id: 'an' + a.id, titre: a.titre, texte: `Annonce de ${a.auteur} · ${a.destinataires}`, to: peut('annonces') ? '/secretariat/annonces' : undefined }));
+  return notifications;
+}
+
+function Navigation({ groupes, sombre, onNavigate }: { groupes: Groupe[]; sombre?: boolean; onNavigate?: () => void }) {
   return (
     <div className="space-y-5">
       {groupes.map((g, i) => (
@@ -153,14 +170,14 @@ function Navigation({ sombre, onNavigate }: { sombre?: boolean; onNavigate?: () 
 }
 
 /* ---------- En-tête ordinateur : page en cours, recherche, notifications ---------- */
-function Entete({ onDeconnexion }: { onDeconnexion: () => void }) {
+function Entete({ config, onDeconnexion }: { config: ConfigEspace; onDeconnexion: () => void }) {
   const { session } = useAuth();
   const { etat } = useSecretariat();
   const peut = useDroit();
   const loc = useLocation();
-  const groupes = useMenu();
-  const liens = groupes.flatMap((g) => g.liens);
-  const page = liens.find((l) => l.to === loc.pathname && l.to !== '/secretariat')?.label ?? '';
+  const liens = config.groupes.flatMap((g) => g.liens);
+  const page = liens.find((l) => l.to === loc.pathname && l.to !== config.accueil)?.label ?? '';
+  const base = config.accueil;
 
   const rechercher = (q: string): ResultatRecherche[] => {
     const r: ResultatRecherche[] = liens.filter((l) => l.label.toLowerCase().includes(q)).map((l) => ({ id: 'p' + l.to, groupe: 'Pages', label: l.label, to: l.to, icone: l.icon }));
@@ -168,47 +185,54 @@ function Entete({ onDeconnexion }: { onDeconnexion: () => void }) {
       visibles(etat.eleves)
         .filter((e) => `${e.nom} ${e.prenom} ${e.matricule}`.toLowerCase().includes(q))
         .slice(0, 5)
-        .forEach((e) => r.push({ id: 'e' + e.id, groupe: 'Élèves', label: nomEleve(e), detail: `${e.matricule} · ${e.classe}${e.situation === 'parti' ? ' · parti' : ''}`, to: `/secretariat/eleves?eleve=${e.id}`, icone: GraduationCap }));
+        .forEach((e) => r.push({ id: 'e' + e.id, groupe: 'Élèves', label: nomEleve(e), detail: `${e.matricule} · ${e.classe}${e.situation === 'parti' ? ' · parti' : ''}`, to: `${base}/eleves?eleve=${e.id}`, icone: GraduationCap }));
     if (peut('parents'))
       visibles(etat.parents)
         .filter((x) => `${x.nom} ${x.telephone}`.toLowerCase().includes(q))
         .slice(0, 3)
-        .forEach((x) => r.push({ id: 'pa' + x.id, groupe: 'Parents', label: x.nom, detail: x.telephone, to: `/secretariat/parents?q=${encodeURIComponent(x.nom)}`, icone: Users }));
+        .forEach((x) => r.push({ id: 'pa' + x.id, groupe: 'Parents', label: x.nom, detail: x.telephone, to: `${base}/parents?q=${encodeURIComponent(x.nom)}`, icone: Users }));
     if (peut('caisse'))
       etat.operations
         .filter((o) => `${o.numero} ${o.reference ?? ''}`.toLowerCase().includes(q))
         .slice(0, 3)
-        .forEach((o) => r.push({ id: 'o' + o.id, groupe: 'Caisse', label: `${o.numero} · ${o.libelle}`, detail: `${o.montant.toLocaleString('fr-FR')} FCFA${o.eleve ? ` · ${o.eleve}` : ''}`, to: `/secretariat/caisse?q=${o.numero}`, icone: Receipt }));
+        .forEach((o) => r.push({ id: 'o' + o.id, groupe: 'Caisse', label: `${o.numero} · ${o.libelle}`, detail: `${o.montant.toLocaleString('fr-FR')} FCFA${o.eleve ? ` · ${o.eleve}` : ''}`, to: `${base}/caisse?q=${o.numero}`, icone: Receipt }));
     return r;
   };
-
-  const jour = aujourdhui();
-  const notifications: NotificationEntete[] = [];
-  const absences = visibles(etat.absences).filter((a) => a.statut !== 'justifiee').length;
-  if (peut('absences') && absences) notifications.push({ id: 'abs' + absences, titre: 'Absences à justifier', texte: `${absences} absence(s) ou retard(s) attendent un justificatif.`, to: '/secretariat/absences' });
-  etat.remboursements.filter((r) => r.statut === 'approuvee').forEach((r) => peut('remboursements') && notifications.push({ id: 'rb' + r.id, titre: 'Remboursement approuvé', texte: `${r.montant.toLocaleString('fr-FR')} FCFA pour ${r.eleve} : à exécuter.`, to: '/secretariat/remboursements' }));
-  if (peut('clotures') && !etat.clotures.some((c) => c.date === jour)) notifications.push({ id: 'cl' + jour, titre: 'Clôture de caisse', texte: 'La caisse du jour n’est pas encore clôturée.', to: '/secretariat/cloture' });
-  visibles(etat.annonces).slice(0, 2).forEach((a) => notifications.push({ id: 'an' + a.id, titre: a.titre, texte: `Annonce de ${a.auteur} · ${a.destinataires}`, to: peut('annonces') ? '/secretariat/annonces' : undefined }));
 
   if (!session) return null;
   return (
     <EnteteBureau
-      espace="Secrétariat"
-      accueil="/secretariat"
+      espace={config.court}
+      accueil={config.accueil}
       page={page}
       placeholder={peut('eleves') ? 'Rechercher un élève, un matricule, un reçu…' : 'Rechercher une page…'}
       rechercher={rechercher}
-      notifications={notifications}
+      notifications={config.notifications}
+      toutesNotifications={config.toutesNotifications}
       nom={session.nom}
       fonction={session.fonction}
-      liens={[{ label: 'Mon compte', to: '/secretariat/compte', icone: UserRound }, { label: 'Mon activité', to: '/secretariat/activite', icone: History }]}
+      liens={config.liensCompte}
       onDeconnexion={onDeconnexion}
     />
   );
 }
 
-function Cadre() {
+/** Ce qui change d'un espace à l'autre (secrétariat, direction). */
+export interface ConfigEspace {
+  libelle: string;
+  court: string;
+  accueil: string;
+  groupes: Groupe[];
+  notifications: NotificationEntete[];
+  toutesNotifications?: string;
+  liensCompte: { label: string; to: string; icone: LucideIcon }[];
+}
+
+export function CadreEspace({ config }: { config: ConfigEspace }) {
   const { session, deconnexion } = useAuth();
+  const { etat } = useSecretariat();
+  // Couleur choisie par l'établissement dans ses paramètres
+  useEffect(() => appliquerTeinte(etat.parametres.couleur), [etat.parametres.couleur]);
   const nav = useNavigate();
   const loc = useLocation();
   const [menu, setMenu] = useState(false);
@@ -238,15 +262,15 @@ function Cadre() {
           <img src="/logo.svg" alt="" className="size-12 rounded-2xl shadow-[0_0_0_1px_rgb(255_255_255/0.12)]" />
           <div className="leading-tight">
             <p className="font-display text-[19px] font-extrabold text-white">Franck School</p>
-            <p className="text-[13px] text-brand-300">Espace secrétariat</p>
+            <p className="text-[13px] text-brand-300">{config.libelle}</p>
           </div>
         </div>
         <div className="mx-4 mb-4 rounded-xl bg-white/[0.06] px-4 py-3 ring-1 ring-inset ring-white/10">
-          <p className="truncate text-[13px] font-semibold text-white">{ecole.nom}</p>
+          <p className="truncate text-[13px] font-semibold text-white">{etat.parametres.nom}</p>
           <p className="mt-0.5 text-xs text-brand-300">Année {ecole.annee} · séquence 2</p>
         </div>
-        <nav aria-label="Navigation de l’espace secrétariat" className="flex-1 overflow-y-auto px-3 pb-4">
-          <Navigation sombre />
+        <nav aria-label={`Navigation : ${config.libelle}`} className="flex-1 overflow-y-auto px-3 pb-4">
+          <Navigation groupes={config.groupes} sombre />
         </nav>
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
@@ -272,10 +296,10 @@ function Cadre() {
             <img src="/logo.svg" alt="" className="size-9 rounded-xl" />
             <span className="min-w-0 leading-tight">
               <span className="block truncate font-display text-[17px] font-extrabold tracking-[-0.01em]">Franck School</span>
-              <span className="block text-xs text-encre-doux">Secrétariat</span>
+              <span className="block text-xs text-encre-doux">{config.court}</span>
             </span>
           </div>
-          <NavLink to="/secretariat/compte" className="grid size-11 place-items-center rounded-xl hover:bg-papier" aria-label="Mon compte">
+          <NavLink to={config.liensCompte[0]?.to ?? config.accueil} className="grid size-11 place-items-center rounded-xl hover:bg-papier" aria-label={config.liensCompte[0]?.label ?? 'Mon compte'}>
             <Avatar name={session.nom} size="sm" />
           </NavLink>
         </div>
@@ -292,8 +316,8 @@ function Cadre() {
                 <X className="size-5" />
               </button>
             </div>
-            <nav aria-label="Navigation de l’espace secrétariat" className="flex-1 overflow-y-auto px-3 py-4">
-              <Navigation onNavigate={() => setMenu(false)} />
+            <nav aria-label={`Navigation : ${config.libelle}`} className="flex-1 overflow-y-auto px-3 py-4">
+              <Navigation groupes={config.groupes} onNavigate={() => setMenu(false)} />
             </nav>
             <div className="flex items-center gap-3 border-t border-papier-ligne p-4">
               <Avatar name={session.nom} />
@@ -309,7 +333,7 @@ function Cadre() {
         </div>
       )}
 
-      <Entete onDeconnexion={sortir} />
+      <Entete config={config} onDeconnexion={sortir} />
 
       <main className="mx-auto w-full max-w-[1240px] px-4 pb-20 pt-6 sm:px-6 lg:px-10 lg:pt-9">
         <div key={loc.pathname} className="animate-entree">
@@ -320,10 +344,27 @@ function Cadre() {
   );
 }
 
+function Secretariat() {
+  const groupes = useMenuSecretariat();
+  const notifications = useNotificationsSecretariat();
+  return (
+    <CadreEspace
+      config={{
+        libelle: 'Espace secrétariat',
+        court: 'Secrétariat',
+        accueil: '/secretariat',
+        groupes,
+        notifications,
+        liensCompte: [{ label: 'Mon compte', to: '/secretariat/compte', icone: UserRound }, { label: 'Mon activité', to: '/secretariat/activite', icone: History }],
+      }}
+    />
+  );
+}
+
 export default function EspaceSecretaire() {
   return (
     <SecretariatProvider>
-      <Cadre />
+      <Secretariat />
     </SecretariatProvider>
   );
 }
@@ -360,7 +401,7 @@ export function Garde({ droit, children }: { droit: string | string[]; children:
       <p className="mx-auto mt-4 flex max-w-sm items-center justify-center gap-2 text-[13px] text-encre-pale">
         <ShieldCheck className="size-4" aria-hidden /> Cette tentative n’a rien modifié. Elle est notée dans le journal.
       </p>
-      <Button className="mt-7" onClick={() => nav('/secretariat')}>Retour à l’accueil</Button>
+      <Button className="mt-7" onClick={() => nav(chemin(''))}>Retour à l’accueil</Button>
     </div>
   );
 }

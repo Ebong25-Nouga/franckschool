@@ -4,6 +4,7 @@
  * tant que l'API Laravel n'est pas branchée : chaque action change vraiment l'écran
  * et laisse une trace dans le journal, mais rien n'est envoyé à un serveur.
  */
+import { TOUS_DROITS_SECRETAIRE } from '@/lib/permissions';
 import { classes as nomsClasses, eleves as elevesDemo, matieresClasse, professeurs, type Eleve, type Mode } from '@/data/demo';
 
 /* ---------------- Masquage et suppression logique ---------------- */
@@ -151,6 +152,8 @@ export interface Cloture {
   ecart: number;
   observation: string;
   auteur: string;
+  /** Prise de connaissance d'un écart par l'administrateur */
+  vu?: { par: string; le: string; commentaire: string };
 }
 export interface Annonce extends Trace {
   id: number;
@@ -202,7 +205,13 @@ export interface AnneePassee {
   eleves: AncienEleve[];
 }
 /** Saisie des notes d'une matière, dans une classe, pour une séquence (1 à 6). */
-export type StatutReleve = 'non_commencee' | 'brouillon' | 'soumise' | 'validee';
+export type StatutReleve = 'non_commencee' | 'brouillon' | 'correction' | 'soumise' | 'validee';
+export interface EtapeValidation {
+  quand: string;
+  action: 'Soumission' | 'Validation' | 'Correction demandée' | 'Nouvelle soumission';
+  par: string;
+  commentaire?: string;
+}
 export interface Releve {
   id: number;
   classe: string;
@@ -214,12 +223,56 @@ export interface Releve {
   notes: number;
   attendu: number;
   relance?: string;
+  /** Circuit de validation : soumission, correction demandée, nouvelle soumission, validation */
+  historique: EtapeValidation[];
 }
 /** État des bulletins d'une classe pour une période (clé « classe|période »). */
 export interface EtatBulletin {
   statut: 'genere' | 'publie';
   le: string;
   par: string;
+}
+
+/** Compte d'une secrétaire, géré par l'administrateur (droits du catalogue unique). */
+export interface CompteSecretaire {
+  id: number;
+  nom: string;
+  email: string;
+  telephone: string;
+  actif: boolean;
+  droits: string[];
+  creeLe: string;
+  derniereConnexion?: string;
+}
+export interface AnneeScolaire {
+  id: number;
+  annee: string;
+  statut: 'active' | 'preparation' | 'archivee';
+  sequences: { n: number; debut: string; fin: string }[];
+}
+export interface Parametres {
+  nom: string;
+  sigle: string;
+  adresse: string;
+  ville: string;
+  telephone: string;
+  email: string;
+  devise: string;
+  couleur: string;
+  logo?: string;
+  signataire: string;
+  titreSignataire: string;
+  autorisation: string;
+  mentions: { min: number; libelle: string }[];
+  frais: { niveau: string; montant: number }[];
+  tranches: { libelle: string; part: number; limite: string }[];
+}
+export interface Connexion {
+  id: number;
+  quand: string;
+  appareil: string;
+  lieu: string;
+  resultat: 'Réussie' | 'Échouée';
 }
 
 export interface Etat {
@@ -241,10 +294,14 @@ export interface Etat {
   releves: Releve[];
   bulletins: Record<string, EtatBulletin>;
   annees: AnneePassee[];
+  comptes: CompteSecretaire[];
+  anneesScolaires: AnneeScolaire[];
+  parametres: Parametres;
+  connexions: Connexion[];
 }
 
 /* ---------------- Dates ---------------- */
-export const VERSION_DONNEES = 3;
+export const VERSION_DONNEES = 5;
 const pad = (n: number, l = 2) => String(n).padStart(l, '0');
 export const isoJour = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const isoMinute = (d: Date) => `${isoJour(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -402,11 +459,61 @@ export function etatInitial(): Etat {
         const s2: StatutReleve = complete ? 'validee' : k === 0 ? 'non_commencee' : k === 1 ? 'brouillon' : k === 2 ? 'soumise' : 'validee';
         const evals = mi % 2 ? ['Devoir surveillé', 'Composition'] : ['Composition'];
         return [
-          { id: idRel++, classe, matiere: m.nom, prof: m.prof, sequence: 1, evaluations: evals, statut: 'validee' as StatutReleve, notes: attendu, attendu },
-          { id: idRel++, classe, matiere: m.nom, prof: m.prof, sequence: 2, evaluations: s2 === 'non_commencee' ? [] : evals, statut: s2, notes: s2 === 'non_commencee' ? 0 : s2 === 'brouillon' ? Math.ceil(attendu / 2) : attendu, attendu },
+          { id: idRel++, classe, matiere: m.nom, prof: m.prof, sequence: 1, evaluations: evals, statut: 'validee' as StatutReleve, notes: attendu, attendu, historique: [{ quand: isoMinute(ilYa(48, 17, 10)), action: 'Soumission' as const, par: m.prof }, { quand: isoMinute(ilYa(46, 9, 30)), action: 'Validation' as const, par: 'Jean-Pierre Manga' }] },
+          { id: idRel++, classe, matiere: m.nom, prof: m.prof, sequence: 2, evaluations: s2 === 'non_commencee' ? [] : evals, statut: s2, notes: s2 === 'non_commencee' ? 0 : s2 === 'brouillon' ? Math.ceil(attendu / 2) : attendu, attendu, historique: [] },
         ];
       }),
   );
+  // Historique de la séquence 2 : soumissions, validations, une correction demandée, une nouvelle soumission
+  const s2 = releves.filter((r) => r.sequence === 2);
+  // Tle C : toutes les notes sont soumises, il ne manque que la validation de la direction (démonstration de la génération automatique)
+  s2.filter((r) => r.classe === 'Tle C' && (r.statut === 'brouillon' || r.statut === 'non_commencee')).forEach((r) => Object.assign(r, { statut: 'soumise', notes: r.attendu, evaluations: r.evaluations.length ? r.evaluations : ['Composition'] }));
+  s2.forEach((r, i) => {
+    if (r.statut === 'soumise') r.historique = [{ quand: isoMinute(ilYa(i % 3, 8 + (i % 8), 15)), action: 'Soumission', par: r.prof }];
+    if (r.statut === 'validee') r.historique = [{ quand: isoMinute(ilYa(6, 17, 0)), action: 'Soumission', par: r.prof }, { quand: isoMinute(ilYa(5, 10, 20)), action: 'Validation', par: 'Jean-Pierre Manga' }];
+  });
+  const aCorriger = s2.find((r) => r.statut === 'brouillon' && r.classe === '1ère D') ?? s2.find((r) => r.statut === 'brouillon');
+  if (aCorriger) {
+    aCorriger.statut = 'correction';
+    aCorriger.notes = aCorriger.attendu;
+    aCorriger.historique = [
+      { quand: isoMinute(ilYa(3, 16, 40)), action: 'Soumission', par: aCorriger.prof },
+      { quand: isoMinute(ilYa(2, 9, 5)), action: 'Correction demandée', par: 'Jean-Pierre Manga', commentaire: 'Deux notes semblent inversées (lignes 7 et 8). Merci de vérifier avec les copies.' },
+    ];
+  }
+  const resoumise = s2.find((r) => r.statut === 'soumise' && r.classe === 'Tle C') ?? s2.find((r) => r.statut === 'soumise');
+  if (resoumise)
+    resoumise.historique = [
+      { quand: isoMinute(ilYa(4, 15, 0)), action: 'Soumission', par: resoumise.prof },
+      { quand: isoMinute(ilYa(3, 11, 30)), action: 'Correction demandée', par: 'Jean-Pierre Manga', commentaire: 'Un élève absent a reçu 0 au lieu de ABS.' },
+      { quand: isoMinute(ilYa(1, 18, 10)), action: 'Nouvelle soumission', par: resoumise.prof, commentaire: 'Corrigé : ABS pour l’élève absent.' },
+    ];
+
+  const comptes: CompteSecretaire[] = [
+    { id: 1, nom: 'Nadine Ekotto', email: 'secretaire@etoiles.cm', telephone: '+237 677 41 22 90', actif: true, droits: TOUS_DROITS_SECRETAIRE.filter((d) => d !== 'supprimer'), creeLe: '2026-08-25', derniereConnexion: isoMinute(ilYa(0, 7, 52)) },
+    { id: 2, nom: 'Paul Biyong', email: 'paul.b@etoiles.cm', telephone: '+237 690 15 63 07', actif: true, droits: ['eleves', 'classes', 'bulletins', 'caisse'], creeLe: '2026-09-01', derniereConnexion: isoMinute(ilYa(0, 8, 30)) },
+    { id: 3, nom: 'Carine Tagne', email: 'carine.t@etoiles.cm', telephone: '+237 655 70 48 12', actif: false, droits: ['eleves'], creeLe: '2026-09-01', derniereConnexion: isoMinute(ilYa(23, 16, 0)) },
+  ];
+  const anneesScolaires: AnneeScolaire[] = [
+    { id: 1, annee: '2026-2027', statut: 'active', sequences: [['2026-09-08', '2026-10-10'], ['2026-10-13', '2026-12-05'], ['2027-01-05', '2027-02-13'], ['2027-02-16', '2027-03-27'], ['2027-04-13', '2027-05-15'], ['2027-05-18', '2027-06-12']].map(([debut, fin], i) => ({ n: i + 1, debut, fin })) },
+    { id: 2, annee: '2025-2026', statut: 'archivee', sequences: [] },
+    { id: 3, annee: '2024-2025', statut: 'archivee', sequences: [] },
+  ];
+  const parametres: Parametres = {
+    nom: 'Collège Bilingue Les Étoiles', sigle: 'CBE', adresse: 'Rue 1.234, Bastos', ville: 'Yaoundé', telephone: '+237 222 20 30 40', email: 'contact@etoiles.cm', devise: 'Travail · Discipline · Réussite', couleur: '#1C32A5',
+    signataire: 'Jean-Pierre Manga', titreSignataire: 'Le Principal', autorisation: 'Arrêté n° 2014/0457/MINESEC',
+    mentions: [{ min: 18, libelle: 'Excellent' }, { min: 16, libelle: 'Très bien' }, { min: 14, libelle: 'Bien' }, { min: 12, libelle: 'Assez bien' }, { min: 10, libelle: 'Passable' }, { min: 8, libelle: 'Insuffisant' }, { min: 0, libelle: 'Faible' }],
+    frais: [{ niveau: 'Premier cycle (6ème à 3ème)', montant: 150000 }, { niveau: 'Second cycle (2nde à Tle)', montant: 185000 }],
+    tranches: [{ libelle: 'Inscription', part: 17, limite: '2026-09-05' }, { libelle: '1re tranche', part: 33, limite: '2026-09-30' }, { libelle: '2e tranche', part: 33, limite: '2026-11-30' }, { libelle: '3e tranche', part: 17, limite: '2027-01-15' }],
+  };
+  const connexions: Connexion[] = [
+    { id: 1, quand: isoMinute(ilYa(0, 7, 40)), appareil: 'Chrome · Windows', lieu: 'Yaoundé', resultat: 'Réussie' },
+    { id: 2, quand: isoMinute(ilYa(1, 21, 12)), appareil: 'Application · Android', lieu: 'Yaoundé', resultat: 'Réussie' },
+    { id: 3, quand: isoMinute(ilYa(2, 6, 58)), appareil: 'Chrome · Android', lieu: 'Douala', resultat: 'Échouée' },
+    { id: 4, quand: isoMinute(ilYa(2, 7, 1)), appareil: 'Chrome · Android', lieu: 'Douala', resultat: 'Réussie' },
+    { id: 5, quand: isoMinute(ilYa(4, 18, 30)), appareil: 'Chrome · Windows', lieu: 'Yaoundé', resultat: 'Réussie' },
+  ];
+
   const bulletins: Record<string, EtatBulletin> = Object.fromEntries([
     ...nomsClasses.map((c) => [`${c}|Séquence 1`, { statut: 'publie', le: isoMinute(ilYa(40, 15, 0)), par: 'Nadine Ekotto' }]),
     ['5ème A|Séquence 2', { statut: 'genere', le: isoMinute(ilYa(1, 16, 20)), par: 'Paul Biyong' }],
@@ -451,5 +558,16 @@ export function etatInitial(): Etat {
     { id: 6, quand: isoMinute(ilYa(2, 15, 30)), utilisateur: 'Nadine Ekotto', role: 'Secrétaire', etablissement: 'Les Étoiles', operation: 'Demande', module: 'Remboursements', element: `25 000 FCFA · ${el(6).nom} ${el(6).prenom}`, motif: "Départ de l'établissement (mutation des parents à Garoua)." },
   ];
 
-  return { version: VERSION_DONNEES, eleves, parents, enseignants, classes, matieres, absences, incidents, creneaux, operations, remboursements, clotures, annonces, documents, journal, releves, bulletins, annees };
+  // Quelques éléments déjà retirés par les secrétaires (visibles dans l'historique de l'administrateur)
+  const retirer = <T extends Trace>(x: T | undefined, etat: 'masque' | 'supprime', par: string, motif: string, jours: number) => x && Object.assign(x, { etat, retirePar: par, motifRetrait: motif, retireLe: isoMinute(ilYa(jours, 11, 20)) });
+  retirer(parents.find((p) => p.id === 33), 'supprime', 'Paul Biyong', 'Doublon créé par erreur', 1);
+  retirer(absences.find((a) => a.id === 7), 'masque', 'Nadine Ekotto', 'Absence saisie deux fois', 2);
+  journal.push(
+    { id: 7, quand: isoMinute(ilYa(1, 11, 20)), utilisateur: 'Paul Biyong', role: 'Secrétaire', etablissement: 'Les Étoiles', operation: 'Suppression', module: 'Parents et tuteurs', element: parents.find((p) => p.id === 33)?.nom ?? 'Parent', elementId: 33, motif: 'Doublon créé par erreur' },
+    { id: 8, quand: isoMinute(ilYa(2, 11, 20)), utilisateur: 'Nadine Ekotto', role: 'Secrétaire', etablissement: 'Les Étoiles', operation: 'Masquage', module: 'Absences', element: 'Absence du ' + absences[6].date, elementId: 7, motif: 'Absence saisie deux fois' },
+    { id: 9, quand: isoMinute(ilYa(5, 10, 20)), utilisateur: 'Jean-Pierre Manga', role: 'Administrateur', etablissement: 'Les Étoiles', operation: 'Validation', module: 'Notes', element: 'Notes de la 6ème A, séquence 2' },
+    { id: 10, quand: isoMinute(ilYa(3, 9, 0)), utilisateur: 'M. ESSOMBA Paul', role: 'Enseignant', etablissement: 'Les Étoiles', operation: 'Soumission', module: 'Notes', element: 'Mathématiques, 3ème A, séquence 2' },
+  );
+
+  return { version: VERSION_DONNEES, eleves, parents, enseignants, classes, matieres, absences, incidents, creneaux, operations, remboursements, clotures, annonces, documents, journal, releves, bulletins, annees, comptes, anneesScolaires, parametres, connexions };
 }

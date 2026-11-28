@@ -95,18 +95,18 @@ export function Documents() {
 /* =========================================================
  * Annonces
  * ======================================================= */
-export function Annonces() {
+export function Annonces({ sansTitre = false }: { sansTitre?: boolean }) {
   const { etat, ajouter, retirer, utilisateur } = useSecretariat();
   const toast = useToast();
   const classes = visibles(etat.classes).map((c) => c.nom);
-  const destinataires = ['Tous les parents', 'Tous les enseignants', 'Tout le personnel', ...classes.map((c) => `Parents de la ${c}`)];
+  const destinataires = ['Tous les parents', 'Parents ayant un reste à payer', 'Tous les enseignants', 'Tout le personnel', ...classes.map((c) => `Parents de la ${c}`)];
   const [f, setF] = useState({ titre: '', message: '', destinataires: destinataires[0] });
   const [essai, setEssai] = useState(false);
   const liste = visibles(etat.annonces).sort((a, b) => b.date.localeCompare(a.date));
   const ok = f.titre.trim().length >= 3 && f.message.trim().length >= 10;
   return (
     <>
-      <Titre titre="Annonces" texte="Publiez une annonce : elle apparaît dans l’espace des destinataires. L’envoi par SMS sera fait par le serveur." />
+      {!sansTitre && <Titre titre="Annonces" texte="Publiez une annonce : elle apparaît dans l’espace des destinataires. L’envoi par SMS sera fait par le serveur." />}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.3fr]">
         <Bloc titre="Nouvelle annonce" icone={Megaphone}>
           <div className="space-y-4">

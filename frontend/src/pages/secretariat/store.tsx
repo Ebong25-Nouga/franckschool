@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAuth } from '@/auth';
 import { ecole, type Mode } from '@/data/demo';
-import { etatInitial, isoJour, isoMinute, VERSION_DONNEES, type EntreeJournal, type Etat, type Operation } from './donnees';
+import { etatInitial, isoJour, isoMinute, VERSION_DONNEES, type EntreeJournal, type Etat, type Operation, type Parametres } from './donnees';
 
 /**
  * « Magasin » de l'espace secrétariat (démonstration, sans serveur).
@@ -25,6 +25,9 @@ interface Api {
   enlever: (cle: 'creneaux', id: number, t: Trace) => void;
   /** Masquage ou suppression logique : l'élément reste en base, l'administrateur le voit et peut le restaurer. */
   retirer: <K extends Collection>(cle: K, id: number, mode: 'masque' | 'supprime', motif: string, t: Omit<Trace, 'operation' | 'motif'>) => void;
+  /** Restauration par l'administrateur d'un élément masqué ou supprimé (motif obligatoire, tracé). */
+  restaurer: <K extends Collection>(cle: K, id: number, motif: string, t: Omit<Trace, 'operation' | 'motif'>) => void;
+  majParametres: (p: Parametres, t: Trace) => void;
   encaisser: (p: { eleveId: number; libelle: string; montant: number; mode: Mode; reference?: string }) => Operation;
   annulerOperation: (id: number, motif: string) => void;
   depenser: (p: { libelle: string; categorie: string; beneficiaire: string; montant: number; mode: Mode; reference?: string; justificatif: string }) => Operation;
@@ -101,6 +104,12 @@ export function SecretariatProvider({ children }: { children: ReactNode }) {
           (e) => ({ ...e, [cle]: (e[cle] as AvecId[]).map((x) => (x.id === id ? { ...x, etat: mode, motifRetrait: motif, retirePar: utilisateur, retireLe: isoMinute(new Date()) } : x)) }),
           { ...t, elementId: id, motif, operation: mode === 'masque' ? 'Masquage' : 'Suppression' },
         ),
+      restaurer: (cle, id, motif, t) =>
+        appliquer(
+          (e) => ({ ...e, [cle]: (e[cle] as AvecId[]).map((x) => (x.id === id ? { ...x, etat: 'actif', motifRetrait: undefined, retirePar: undefined, retireLe: undefined } : x)) }),
+          { ...t, elementId: id, motif, operation: 'Restauration' },
+        ),
+      majParametres: (p, t) => appliquer((e) => ({ ...e, parametres: p }), t),
       encaisser: ({ eleveId, libelle, montant, mode, reference }) => {
         const e0 = ref.current;
         const el = e0.eleves.find((x) => x.id === eleveId)!;

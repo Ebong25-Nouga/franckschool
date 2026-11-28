@@ -1,12 +1,13 @@
 import { Ban, Banknote, BellRing, CheckCircle2, Lock, Paperclip, Plus, Printer, Receipt, Smartphone, Undo2, Vault, Wallet } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/auth';
 import { Bloc, Chiffre, Titre } from '@/components/espace';
 import { Button, EmptyState, Gauge, IconButton, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
 import type { Mode } from '@/data/demo';
 import { entete, html, imprimer } from '@/lib/imprimer';
 import { Champ, ChoisirEleve, dateFr, dateHeureFr, Grille, Liste, ModalMotif, montant, nombre, nomEleve, Note, Saisie, useDroit, Zone } from './commun';
-import { isoJour, type Operation, type StatutRemboursement } from './donnees';
+import { isoJour, isoMinute, type Cloture as ClotureT, type DemandeRemboursement, type Operation, type StatutRemboursement } from './donnees';
 import { aujourdhui, useSecretariat, visibles } from './store';
 
 const modes: Mode[] = ['Espèces', 'MTN MoMo', 'Orange Money', 'Banque'];
@@ -30,9 +31,86 @@ export function recu(o: Operation, reste?: number) {
 }
 
 /* =========================================================
+ * Décisions de l'administrateur (cahier admin § 11, décision 030)
+ * ======================================================= */
+function useDirection() {
+  const { session } = useAuth();
+  return session?.espace === 'admin';
+}
+
+function DecisionRemboursement({ r, choix, onClose }: { r: DemandeRemboursement; choix: 'approuvee' | 'refusee'; onClose: () => void }) {
+  const { modifier, utilisateur } = useSecretariat();
+  const toast = useToast();
+  return (
+    <ModalMotif
+      titre={choix === 'approuvee' ? 'Approuver le remboursement' : 'Refuser le remboursement'}
+      texte={`${montant(r.montant)} pour ${r.eleve} (${r.classe}), demandé par ${r.demandeur} : « ${r.motif} »`}
+      bouton={choix === 'approuvee' ? 'Approuver' : 'Refuser'}
+      danger={choix === 'refusee'}
+      rappel={choix === 'approuvee' ? 'La secrétaire pourra ensuite remettre l’argent ; l’opération sera inscrite au journal de caisse.' : 'La secrétaire verra votre motif.'}
+      onValider={(motif) => {
+        modifier('remboursements', r.id, { statut: choix, decision: `${choix === 'approuvee' ? 'Approuvé' : 'Refusé'} par ${utilisateur} : ${motif}` }, { operation: choix === 'approuvee' ? 'Approbation' : 'Refus', module: 'Remboursements', element: `${montant(r.montant)} · ${r.eleve}`, avant: 'En attente', apres: choix === 'approuvee' ? 'Approuvée' : 'Refusée', motif });
+        toast(choix === 'approuvee' ? 'Remboursement approuvé.' : 'Remboursement refusé.');
+      }}
+      onClose={onClose}
+    />
+  );
+}
+
+function VuEcart({ c, onClose }: { c: ClotureT; onClose: () => void }) {
+  const { modifier, utilisateur } = useSecretariat();
+  const toast = useToast();
+  return (
+    <ModalMotif
+      titre="Écart de caisse"
+      texte={`Clôture du ${dateFr(c.date)} par ${c.auteur} : attendu ${montant(c.attendu)}, compté ${montant(c.compte)}, écart ${montant(c.ecart)}. Explication : « ${c.observation} »`}
+      bouton="J’en ai pris connaissance"
+      rappel="Votre commentaire est enregistré avec la clôture et dans le journal."
+      onValider={(commentaire) => {
+        modifier('clotures', c.id, { vu: { par: utilisateur, le: isoMinute(new Date()), commentaire } }, { operation: 'Contrôle d’écart', module: 'Clôture de caisse', element: `Clôture du ${dateFr(c.date)} · écart ${montant(c.ecart)}`, motif: commentaire });
+        toast('Écart vu et commenté.');
+      }}
+      onClose={onClose}
+    />
+  );
+}
+
+function DecisionsCaisse() {
+  const { etat } = useSecretariat();
+  const [decision, setDecision] = useState<{ r: DemandeRemboursement; choix: 'approuvee' | 'refusee' } | null>(null);
+  const [ecart, setEcart] = useState<ClotureT | null>(null);
+  const demandes = etat.remboursements.filter((r) => r.statut === 'en_attente');
+  const ecarts = etat.clotures.filter((c) => c.ecart !== 0 && !c.vu);
+  if (!demandes.length && !ecarts.length) return <div className="mb-6"><Note>Aucune décision en attente : remboursements et écarts de caisse sont à jour.</Note></div>;
+  return (
+    <Bloc titre="À décider" className="mb-6">
+      <ul className="divide-y divide-papier-ligne/70">
+        {demandes.map((r) => (
+          <li key={'r' + r.id} className="flex flex-wrap items-center gap-3 py-3">
+            <Undo2 className="size-5 shrink-0 text-brand-700" aria-hidden />
+            <div className="min-w-0 flex-1"><p className="font-semibold">Remboursement de {montant(r.montant)} · {r.eleve} ({r.classe})</p><p className="text-[13px] text-encre-doux">Demandé par {r.demandeur} le {dateFr(r.date)} · « {r.motif} »</p></div>
+            <div className="flex gap-2"><Button size="sm" variant="secondary" onClick={() => setDecision({ r, choix: 'refusee' })}>Refuser</Button><Button size="sm" onClick={() => setDecision({ r, choix: 'approuvee' })}>Approuver</Button></div>
+          </li>
+        ))}
+        {ecarts.map((c) => (
+          <li key={'c' + c.id} className="flex flex-wrap items-center gap-3 py-3">
+            <Vault className="size-5 shrink-0 text-feutre-700" aria-hidden />
+            <div className="min-w-0 flex-1"><p className="font-semibold">Écart de {montant(c.ecart)} à la clôture du {dateFr(c.date)}</p><p className="text-[13px] text-encre-doux">{c.auteur} · « {c.observation} »</p></div>
+            <Button size="sm" variant="secondary" onClick={() => setEcart(c)}>Voir et commenter</Button>
+          </li>
+        ))}
+      </ul>
+      {decision && <DecisionRemboursement {...decision} onClose={() => setDecision(null)} />}
+      {ecart && <VuEcart c={ecart} onClose={() => setEcart(null)} />}
+    </Bloc>
+  );
+}
+
+/* =========================================================
  * Caisse
  * ======================================================= */
 export function Caisse() {
+  const direction = useDirection();
   const { etat, annulerOperation, journaliser } = useSecretariat();
   const peut = useDroit();
   const toast = useToast();
@@ -76,6 +154,7 @@ export function Caisse() {
   return (
     <>
       <Titre titre="Caisse" texte="Encaissez les paiements, imprimez les reçus et suivez les impayés. Une opération n’est jamais effacée : on l’annule par une écriture inverse." action={<Button icon={Banknote} onClick={() => setEncaisser('oui')}>Encaisser un paiement</Button>} />
+      {direction && <DecisionsCaisse />}
       {cloturee && <div className="mb-5"><Note ton="feutre">La caisse du jour est clôturée. Les nouvelles opérations seront comptées dans la clôture de demain.</Note></div>}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Chiffre label="Recettes du jour" valeur={nombre(recettesJour)} unite="FCFA" icone={Wallet} ton="valide" detail={`${duJour.filter((o) => o.type === 'recette').length} paiement(s)`} />
@@ -322,6 +401,8 @@ const libRemb: Record<StatutRemboursement, string> = { en_attente: 'En attente d
 const tonRemb: Record<StatutRemboursement, 'feutre' | 'encre' | 'stylo' | 'valide'> = { en_attente: 'feutre', approuvee: 'encre', refusee: 'stylo', executee: 'valide' };
 
 export function Remboursements() {
+  const direction = useDirection();
+  const [decision, setDecision] = useState<{ r: DemandeRemboursement; choix: 'approuvee' | 'refusee' } | null>(null);
   const { etat, executerRemboursement } = useSecretariat();
   const toast = useToast();
   const [nouvelle, setNouvelle] = useState(false);
@@ -346,13 +427,17 @@ export function Remboursements() {
                 <Td className="max-w-72"><p className="line-clamp-2">{r.motif}</p>{r.decision && <p className="mt-1 text-xs text-encre-doux">{r.decision}</p>}</Td>
                 <Td className="text-[13px]">{dateFr(r.date)}<p className="text-encre-doux">{r.demandeur}</p></Td>
                 <Td><Pill tone={tonRemb[r.statut]}>{libRemb[r.statut]}</Pill></Td>
-                <Td className="text-right">{r.statut === 'approuvee' && <Button size="sm" icon={Wallet} onClick={() => setExecuter(r.id)}>Exécuter</Button>}</Td>
+                <Td className="text-right">
+                  {r.statut === 'approuvee' && <Button size="sm" icon={Wallet} onClick={() => setExecuter(r.id)}>Exécuter</Button>}
+                  {direction && r.statut === 'en_attente' && <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={() => setDecision({ r, choix: 'refusee' })}>Refuser</Button><Button size="sm" onClick={() => setDecision({ r, choix: 'approuvee' })}>Approuver</Button></div>}
+                </Td>
               </tr>
             ))}
           </Table>
         )}
       </section>
       {nouvelle && <NouvelleDemande onClose={() => setNouvelle(false)} />}
+      {decision && <DecisionRemboursement {...decision} onClose={() => setDecision(null)} />}
       {d && (
         <Modal title="Exécuter le remboursement" lead={`${montant(d.montant)} à remettre pour ${d.eleve}.`} onClose={() => setExecuter(null)} footer={<><Button variant="secondary" onClick={() => setExecuter(null)}>Annuler</Button><Button onClick={() => { executerRemboursement(d.id, mode); toast('Remboursement exécuté et inscrit au journal de caisse.'); setExecuter(null); }}>Confirmer la remise</Button></>}>
           <Champ label="Mode de remise"><Liste value={mode} onChange={(e) => setMode(e.target.value as Mode)} options={modes} /></Champ>
@@ -407,6 +492,8 @@ function NouvelleDemande({ onClose }: { onClose: () => void }) {
 const coupures = [10000, 5000, 2000, 1000, 500, 100, 50, 25];
 
 export function Cloture() {
+  const direction = useDirection();
+  const [ecartVu, setEcartVu] = useState<ClotureT | null>(null);
   const { etat, ajouter, utilisateur } = useSecretariat();
   const toast = useToast();
   const jour = aujourdhui();
@@ -484,12 +571,17 @@ export function Cloture() {
                 <Td className="text-right chiffres">{montant(c.attendu)}</Td>
                 <Td className="text-right chiffres">{montant(c.compte)}</Td>
                 <Td className={`text-right font-semibold chiffres ${c.ecart ? 'text-stylo' : 'text-valide'}`}>{montant(c.ecart)}</Td>
-                <Td className="text-[13px] text-encre-doux">{c.observation || '—'}</Td>
+                <Td className="text-[13px] text-encre-doux">
+                  {c.observation || '—'}
+                  {c.vu && <span className="mt-1 block text-valide">Vu par {c.vu.par} : « {c.vu.commentaire} »</span>}
+                  {direction && c.ecart !== 0 && !c.vu && <button onClick={() => setEcartVu(c)} className="mt-1 block cursor-pointer font-semibold text-brand-700 hover:underline">Voir et commenter</button>}
+                </Td>
               </tr>
             ))}
           </Table>
         </div>
       </Bloc>
+      {ecartVu && <VuEcart c={ecartVu} onClose={() => setEcartVu(null)} />}
     </>
   );
 }

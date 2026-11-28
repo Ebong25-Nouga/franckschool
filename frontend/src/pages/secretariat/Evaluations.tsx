@@ -1,7 +1,7 @@
 import { BellRing, ChevronDown, ChevronRight, FileBadge2, Printer, Send } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import { Chiffre, Titre } from '@/components/espace';
-import { Button, Grade, Pill, useToast } from '@/components/kit';
+import { Button, Grade, Modal, Pill, useToast } from '@/components/kit';
 import { appreciation, note } from '@/data/demo';
 import { entete, html, imprimer } from '@/lib/imprimer';
 import { cn } from '@/lib/utils';
@@ -31,12 +31,13 @@ const PERIODES: Periode[] = [
   { label: 'Annuel', sequences: [1, 2, 3, 4, 5, 6] },
 ];
 
-const libStatut: Record<StatutReleve, string> = { non_commencee: 'Pas commencée', brouillon: 'En saisie', soumise: 'Soumise, à valider', validee: 'Validée' };
-const tonStatut: Record<StatutReleve, 'stylo' | 'feutre' | 'encre' | 'valide'> = { non_commencee: 'stylo', brouillon: 'feutre', soumise: 'encre', validee: 'valide' };
-const rangStatut: Record<StatutReleve, number> = { non_commencee: 0, brouillon: 1, soumise: 2, validee: 3 };
+const libStatut: Record<StatutReleve, string> = { non_commencee: 'Pas commencée', brouillon: 'En saisie', correction: 'Correction demandée', soumise: 'Soumise, à valider', validee: 'Validée' };
+const tonStatut: Record<StatutReleve, 'stylo' | 'feutre' | 'encre' | 'valide'> = { non_commencee: 'stylo', brouillon: 'feutre', correction: 'feutre', soumise: 'encre', validee: 'valide' };
+const rangStatut: Record<StatutReleve, number> = { non_commencee: 0, brouillon: 1, correction: 1, soumise: 2, validee: 3 };
 
 /** Note d'un élève dans une matière pour une séquence (démonstration : déduite de sa moyenne). */
-const noteSeq = (e: EleveS, m: Matiere, seq: number) => Math.max(0, Math.min(20, Math.round((e.moyenne + (((e.id * 7 + m.id * 13 + seq * 5) % 9) - 4) * 0.6) * 4) / 4));
+// eslint-disable-next-line react-refresh/only-export-components
+export const noteSeq = (e: EleveS, m: Matiere, seq: number) => Math.max(0, Math.min(20, Math.round((e.moyenne + (((e.id * 7 + m.id * 13 + seq * 5) % 9) - 4) * 0.6) * 4) / 4));
 const notePeriode = (e: EleveS, m: Matiere, seqs: number[]) => seqs.reduce((s, q) => s + noteSeq(e, m, q), 0) / seqs.length;
 const moyenne = (l: number[]) => (l.length ? l.reduce((a, b) => a + b, 0) / l.length : 0);
 
@@ -86,8 +87,9 @@ function useCalculs(periode: Periode) {
   return { classes, classe };
 }
 
-export function NotesBulletins() {
-  const { etat, modifier, journaliser } = useSecretariat();
+export function NotesBulletins({ direction = false }: { direction?: boolean }) {
+  const { etat, modifier, journaliser, etatBulletins } = useSecretariat();
+  const [publier, setPublier] = useState<string | null>(null);
   const peut = useDroit();
   const toast = useToast();
   const [periode, setPeriode] = useState(PERIODES[1]);
@@ -132,7 +134,11 @@ export function NotesBulletins() {
 
   return (
     <>
-      <Titre titre="Notes et bulletins" texte="Suivez la saisie des notes de chaque classe et relancez les enseignants en retard. Les bulletins se génèrent tout seuls dès que la classe est entièrement validée." />
+      {direction ? (
+        <Titre titre="Résultats et bulletins" texte="Les moyennes, rangs et mentions sont calculés automatiquement. Dès qu’une classe est entièrement validée, ses bulletins sont générés : vous les consultez, puis vous les publiez aux parents." />
+      ) : (
+        <Titre titre="Notes et bulletins" texte="Suivez la saisie des notes de chaque classe et relancez les enseignants en retard. Les bulletins se génèrent tout seuls dès que la classe est entièrement validée." />
+      )}
 
       <div role="tablist" aria-label="Période" className="mb-5 inline-flex max-w-full flex-wrap gap-0.5 rounded-[11px] bg-papier-2 p-1">
         {PERIODES.map((p) => (
@@ -144,7 +150,7 @@ export function NotesBulletins() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Chiffre label="Classes en attente de notes" valeur={String(compteurs.attente)} icone={BellRing} ton="feutre" />
-        <Chiffre label="Bulletins générés, à publier par la direction" valeur={String(compteurs.generes)} icone={FileBadge2} />
+        <Chiffre label={direction ? 'Bulletins générés, à publier' : 'Bulletins générés, à publier par la direction'} valeur={String(compteurs.generes)} icone={FileBadge2} />
         <Chiffre label="Publiés aux parents" valeur={String(compteurs.publies)} icone={Send} ton="valide" />
       </div>
 
@@ -187,7 +193,7 @@ export function NotesBulletins() {
                       </td>
                       <td className="px-5 py-3.5">
                         {c.bulletin ? (
-                          <Pill tone={c.bulletin.statut === 'publie' ? 'valide' : 'encre'}>{c.bulletin.statut === 'publie' ? 'Publiés aux parents' : 'Générés · à publier par la direction'}</Pill>
+                          <Pill tone={c.bulletin.statut === 'publie' ? 'valide' : 'encre'}>{c.bulletin.statut === 'publie' ? 'Publiés aux parents' : direction ? 'Générés · à publier' : 'Générés · à publier par la direction'}</Pill>
                         ) : (
                           <Pill tone="feutre">{c.enAttente} matière{c.enAttente > 1 ? 's' : ''} en attente</Pill>
                         )}
@@ -195,6 +201,7 @@ export function NotesBulletins() {
                       <td className="px-5 py-3.5 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
                           {c.bulletin && peut('bulletins') && <Button size="sm" variant="secondary" icon={Printer} onClick={() => imprimerClasse(c)}>Imprimer</Button>}
+                          {direction && c.bulletin?.statut === 'genere' && <Button size="sm" icon={Send} onClick={() => setPublier(c.nom)}>Publier aux parents</Button>}
                           {!c.pret && <Button size="sm" variant="secondary" onClick={() => setOuverte(ouvert ? null : c.nom)}>{ouvert ? 'Masquer le détail' : 'Voir le détail'}</Button>}
                         </div>
                       </td>
@@ -213,6 +220,11 @@ export function NotesBulletins() {
           </table>
         </div>
       </section>
+      {publier && (
+        <Modal title={`Publier les bulletins de la ${publier}`} lead={`${periode.label}. Les parents les verront dans leur espace, rubrique « Notes et bulletins ».`} onClose={() => setPublier(null)} footer={<><Button variant="secondary" onClick={() => setPublier(null)}>Annuler</Button><Button icon={Send} onClick={() => { etatBulletins(publier, periode.label, 'publie'); toast(`Bulletins de la ${publier} publiés aux parents.`); setPublier(null); }}>Publier</Button></>}>
+          <Note ton="feutre">Une fois publiés, les bulletins ne se modifient plus. Une erreur de note se corrige par une demande de correction à l’enseignant ; une nouvelle version sera alors générée.</Note>
+        </Modal>
+      )}
       <p className="mt-4 text-[13px] text-encre-doux">Les bulletins sont calculés et générés automatiquement par Franck School dès que l’administrateur a validé toutes les notes de la classe pour la période. La publication aux parents est faite par la direction.</p>
 
     </>
@@ -231,7 +243,7 @@ function Detail({ c, periode, peutRelancer, onRelancer, onBulletin }: {
   return (
     <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-papier-ligne">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-papier-ligne/70 px-4 py-3">
-        <p className="text-sm font-bold">{c.nom} · {periode.label}</p>
+        <p className="text-sm font-bold">{c.nom} · {periode.label}{c.pret && c.classement.length > 0 && <span className="ml-2 font-normal text-encre-doux">· moyenne la plus haute {note(c.classement[0].moyenne)} · la plus basse {note(c.classement[c.classement.length - 1].moyenne)}</span>}</p>
         {c.pret && (
           <div className="inline-flex rounded-lg bg-papier-2 p-0.5">
             {(['matieres', 'classement'] as const).map((v) => (
@@ -257,7 +269,7 @@ function Detail({ c, periode, peutRelancer, onRelancer, onBulletin }: {
                 <td className="px-4 py-3"><Pill tone={tonStatut[l.statut]}>{libStatut[l.statut]}{l.statut === 'brouillon' ? ` · ${l.notes}/${l.attendu} notes` : ''}</Pill></td>
                 <td className="px-4 py-3 text-right">
                   {l.statut === 'soumise' && <span className="text-xs text-encre-doux">Chez l’administrateur</span>}
-                  {(l.statut === 'brouillon' || l.statut === 'non_commencee') && peutRelancer && (l.relance ? <span className="text-xs text-encre-doux">Relancé le {dateFr(l.relance)}</span> : <Button size="sm" variant="secondary" icon={BellRing} onClick={() => onRelancer(l)}>Relancer</Button>)}
+                  {(l.statut === 'brouillon' || l.statut === 'non_commencee' || l.statut === 'correction') && peutRelancer && (l.relance ? <span className="text-xs text-encre-doux">Relancé le {dateFr(l.relance)}</span> : <Button size="sm" variant="secondary" icon={BellRing} onClick={() => onRelancer(l)}>Relancer</Button>)}
                 </td>
               </tr>
             ))}
@@ -268,7 +280,7 @@ function Detail({ c, periode, peutRelancer, onRelancer, onBulletin }: {
         <table className="w-full text-[13.5px]">
           <thead>
             <tr className="bg-papier/60 text-left text-xs font-semibold text-encre-doux">
-              <th className="px-4 py-2.5 text-center">Rang</th><th className="px-4 py-2.5">Élève</th><th className="px-4 py-2.5">Moyenne</th><th className="px-4 py-2.5">Appréciation</th><th className="px-4 py-2.5"><span className="sr-only">Bulletin</span></th>
+              <th className="px-4 py-2.5 text-center">Rang</th><th className="px-4 py-2.5">Élève</th><th className="px-4 py-2.5">Moyenne</th><th className="px-4 py-2.5">Mention</th><th className="px-4 py-2.5"><span className="sr-only">Bulletin</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-papier-ligne/70">
