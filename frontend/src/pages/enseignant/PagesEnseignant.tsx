@@ -30,8 +30,28 @@ import { Link } from 'react-router-dom';
 import { Avatar, Button, Grade, Modal, Pill, Segmented, useToast } from '@/components/kit';
 import { Bloc, Chiffre, Titre } from '@/components/espace';
 import { appreciation, ecole, note } from '@/data/demo';
-import { demandesCorrection, elevesDe, emploiEnseignant, evaluations, notificationsEnseignant, type DemandeCorrection, type Evaluation, type StatutEval } from '@/data/enseignant';
+import { demandesCorrection, elevesDe, evaluations, notificationsEnseignant, type DemandeCorrection, type Evaluation, type StatutEval } from '@/data/enseignant';
 import { useEnseignant } from './EspaceEnseignant';
+import { jours as joursSemaine } from '../secretariat/donnees';
+import { useSecretariat } from '../secretariat/store';
+import { imprimer, entete, html } from '@/lib/imprimer';
+
+/** Semaine de l'enseignant, déduite des emplois du temps des classes faits par la secrétaire (décision 036). */
+function useSemaine() {
+  const { profil } = useEnseignant();
+  const { etat } = useSecretariat();
+  const cle = `${profil.civilite} ${profil.nom}`;
+  return joursSemaine.map((jour) => ({
+    jour,
+    cours: etat.creneaux
+      .filter((c) => c.jour === jour && (c.prof === cle || c.prof.startsWith(`${cle} `)))
+      .map((c) => {
+        const [debut, fin] = c.plage.split(' – ');
+        return { debut, fin, classe: c.classe, salle: c.salle, matiere: c.matiere };
+      })
+      .sort((a, b) => a.debut.localeCompare(b.debut)),
+  }));
+}
 
 const statutEval: Record<StatutEval, { tone: 'neutre' | 'feutre' | 'valide' | 'stylo'; label: string }> = {
   brouillon: { tone: 'neutre', label: 'En saisie' },
@@ -50,7 +70,7 @@ export function Accueil() {
   const enAttente = mesEvals.filter((e) => e.statut === 'soumise');
   const corrections = demandesCorrection.filter((d) => d.prof === cle && d.statut === 'a_traiter');
   const eleves = profil.affectations.reduce((s, a) => s + a.effectif, 0);
-  const aujourdhui = emploiEnseignant[cle][0];
+  const aujourdhui = useSemaine()[0];
 
   const taches: { icon: LucideIcon; teinte: string; texte: React.ReactNode; to: string; action: string }[] = [
     ...corrections.length ? [{ icon: MessageSquareWarning, teinte: 'bg-stylo-50 text-stylo', texte: <><b className="text-encre">{corrections.length} demande{corrections.length > 1 ? 's' : ''} de correction</b> de l’administration à traiter.</>, to: '/enseignant/corrections', action: 'Corriger' }] : [],
@@ -78,6 +98,7 @@ export function Accueil() {
         </ul>
         <Bloc titre="Aujourd’hui" className="mt-6">
           <ul className="flex flex-col gap-2">
+            {aujourdhui.cours.length === 0 && <li className="text-sm text-encre-doux">Pas de cours aujourd’hui.</li>}
             {aujourdhui.cours.map((c) => (
               <li key={c.debut} className="flex items-center gap-4 rounded-xl bg-papier px-4 py-3">
                 <span className="font-display font-bold text-brand-700 chiffres">{c.debut}</span>
@@ -114,6 +135,7 @@ export function Accueil() {
           </Bloc>
           <Bloc titre="Aujourd’hui" icone={Clock}>
             <ul className="flex flex-col gap-2">
+              {aujourdhui.cours.length === 0 && <li className="text-sm text-encre-doux">Pas de cours aujourd’hui.</li>}
               {aujourdhui.cours.map((c) => (
                 <li key={c.debut} className="flex items-center gap-4 rounded-xl bg-papier px-4 py-3">
                   <span className="whitespace-nowrap font-display font-bold text-brand-700 chiffres">{c.debut} – {c.fin}</span>
@@ -630,15 +652,21 @@ function Correction({ demande, onClose, onEnvoie }: { demande: DemandeCorrection
 }
 
 /* ===============================================================
- * Emploi du temps (PROVISOIRE)
+ * Emploi du temps : rempli automatiquement depuis ceux des classes
  * ============================================================= */
 const heures = ['07:30', '08:30', '09:30', '10:30', '11:30', '12:30', '13:30', '14:30', '15:30'];
 const minutes = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3));
 
 export function EmploiDuTemps() {
-  const { cle, titulaire } = useEnseignant();
-  const toast = useToast();
-  const semaine = emploiEnseignant[cle];
+  const { profil, titulaire } = useEnseignant();
+  const semaine = useSemaine();
+  const total = semaine.reduce((s, j) => s + j.cours.length, 0);
+  const heuresSemaine = semaine.reduce((s, j) => s + j.cours.reduce((t, c) => t + (minutes(c.fin) - minutes(c.debut)) / 60, 0), 0);
+  const nom = `${profil.civilite} ${profil.nom} ${profil.prenom}`;
+  const imprimerSemaine = () =>
+    imprimer(`Emploi du temps ${nom}`, `${entete(`Emploi du temps · ${nom}`)}<p>${heuresSemaine} h par semaine · ${total} cours</p>
+      <table><tr><th>Jour</th><th>Horaire</th><th>Classe</th><th>Matière</th><th>Salle</th></tr>
+      ${semaine.flatMap((j) => j.cours.map((c) => `<tr><td>${j.jour}</td><td>${c.debut} – ${c.fin}</td><td>${html(c.classe)}</td><td>${html(c.matiere)}</td><td>${html(c.salle)}</td></tr>`)).join('')}</table>`);
   const debut = minutes('07:30');
   const fin = minutes('15:30');
   const px = 64 / 60;
@@ -646,10 +674,10 @@ export function EmploiDuTemps() {
     <>
       <Titre
         titre="Emploi du temps"
-        texte="Semaine du 24 au 28 novembre 2026."
-        action={<Button icon={Download} onClick={() => toast('Emploi du temps téléchargé en PDF.')}>Télécharger en PDF</Button>}
+        texte={`${heuresSemaine} h de cours par semaine · ${total} cours. Fait par le secrétariat ; toute modification apparaît ici aussitôt.`}
+        action={<Button icon={Download} onClick={imprimerSemaine} disabled={!total}>Imprimer</Button>}
       />
-      <p className="mb-5 flex items-start gap-2 rounded-xl bg-feutre-50 px-4 py-3 text-sm"><AlertCircle className="mt-0.5 size-4 shrink-0 text-feutre-700" aria-hidden />Emploi du temps provisoire, donné à titre d’exemple. Son fonctionnement sera défini plus tard.</p>
+      {total === 0 && <p className="mb-5 flex items-start gap-2 rounded-xl bg-feutre-50 px-4 py-3 text-sm"><AlertCircle className="mt-0.5 size-4 shrink-0 text-feutre-700" aria-hidden />Le secrétariat n’a pas encore placé vos cours dans les emplois du temps des classes.</p>}
       {/* Téléphone : liste par jour */}
       <div className="flex flex-col gap-4 lg:hidden">
         {semaine.map((j, i) => (
@@ -680,7 +708,7 @@ export function EmploiDuTemps() {
               {j.cours.map((c) => (
                 <div key={c.debut} className={cn('absolute inset-x-1.5 overflow-hidden rounded-xl p-2.5 text-xs', c.classe === titulaire ? 'bg-brand-700 text-white' : 'bg-brand-100 text-brand-900')} style={{ top: (minutes(c.debut) - debut) * px + 2, height: (minutes(c.fin) - minutes(c.debut)) * px - 4 }}>
                   <p className="font-bold">{c.classe}</p>
-                  <p className="opacity-80">{c.debut}–{c.fin}</p>
+                  <p className="opacity-80">{c.matiere} · {c.debut}–{c.fin}</p>
                   <p className="opacity-80">{c.salle}</p>
                 </div>
               ))}

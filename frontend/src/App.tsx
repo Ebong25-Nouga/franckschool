@@ -110,7 +110,7 @@ export default function App() {
               <Route path="/direction/profil" element={<MonProfil />} />
               <Route path="/direction/inscriptions" element={<Inscriptions />} />
               <Route path="/direction/absences" element={<AbsencesSecretariat />} />
-              <Route path="/direction/emplois-du-temps" element={<EmploisDuTemps />} />
+              <Route path="/direction/emplois-du-temps" element={<EmploisDuTemps lectureSeule />} />
               <Route path="/direction/depenses" element={<Depenses />} />
               <Route path="/direction/remboursements" element={<RemboursementsSecretariat />} />
               <Route path="/direction/cloture" element={<Cloture />} />

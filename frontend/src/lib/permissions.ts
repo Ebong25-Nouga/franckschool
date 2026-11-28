@@ -36,7 +36,7 @@ export const DROITS_SECRETAIRE: GroupeDroits[] = [
     titre: 'Vie scolaire',
     droits: [
       { code: 'absences', libelle: 'Absences et retards', detail: 'Enregistrer, justifier, rapports' },
-      { code: 'emplois', libelle: 'Emplois du temps', detail: 'Créer et modifier les emplois du temps des classes' },
+      { code: 'emplois', libelle: 'Création des emplois du temps', detail: 'Créer et modifier les emplois du temps des classes (celui des enseignants se remplit tout seul)' },
     ],
   },
   {

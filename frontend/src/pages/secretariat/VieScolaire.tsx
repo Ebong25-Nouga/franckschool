@@ -1,9 +1,10 @@
-import { CalendarCheck2, CheckCircle2, Pencil, Plus, Printer, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { CalendarCheck2, Check, CheckCircle2, ChevronDown, Pencil, Plus, Printer, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Chiffre, Titre } from '@/components/espace';
 import { Button, EmptyState, IconButton, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
 import { entete, html, imprimer } from '@/lib/imprimer';
+import { cn } from '@/lib/utils';
 import { BoutonsRetrait, Champ, ChoisirEleve, dateFr, Grille, Liste, ModalMotif, nomEleve, Note, Saisie } from './commun';
 import { jours, plages, type Absence, type Creneau, type StatutAbsence } from './donnees';
 import { aujourdhui, useSecretariat, visibles } from './store';
@@ -149,19 +150,89 @@ function EditionAbsence({ a, onClose }: { a: Absence | null; onClose: () => void
 /* =========================================================
  * Emplois du temps des classes
  * ======================================================= */
-export function EmploisDuTemps() {
+/** Nom court utilisé dans les créneaux (« M. ESSOMBA ») pour un enseignant. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const cleProf = (e: { civilite: string; nom: string }) => `${e.civilite} ${e.nom}`;
+const duProf = (c: Creneau, cle: string) => c.prof === cle || c.prof.startsWith(`${cle} `);
+const HEURES_PLAGE = 2;
+
+/** Liste déroulante avec une information à droite de chaque choix (classes ou enseignants). */
+function Selecteur({ label, valeur, options, onChange }: { label: string; valeur: string; options: { value: string; label: string; info: string }[]; onChange: (v: string) => void }) {
+  const [ouvert, setOuvert] = useState(false);
+  const zone = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ouvert) return;
+    const fermer = (e: MouseEvent) => !zone.current?.contains(e.target as Node) && setOuvert(false);
+    const echap = (e: KeyboardEvent) => e.key === 'Escape' && setOuvert(false);
+    document.addEventListener('mousedown', fermer);
+    document.addEventListener('keydown', echap);
+    return () => {
+      document.removeEventListener('mousedown', fermer);
+      document.removeEventListener('keydown', echap);
+    };
+  }, [ouvert]);
+  const choisi = options.find((o) => o.value === valeur);
+  return (
+    <div ref={zone} className="relative w-full sm:w-[360px]">
+      <span id="sel-edt" className="field-label">{label}</span>
+      <button type="button" aria-haspopup="listbox" aria-expanded={ouvert} aria-labelledby="sel-edt" onClick={() => setOuvert(!ouvert)} className={cn('field-input flex cursor-pointer items-center justify-between gap-2 text-left font-semibold', ouvert && 'ring-2 ring-brand-700')}>
+        <span className="truncate">{choisi?.label ?? '—'}</span>
+        <ChevronDown className={cn('size-4 shrink-0 text-brand-700 transition-transform', ouvert && 'rotate-180')} aria-hidden />
+      </button>
+      {ouvert && (
+        <ul role="listbox" aria-labelledby="sel-edt" className="absolute inset-x-0 top-full z-20 mt-2 max-h-80 overflow-y-auto rounded-2xl bg-white p-1.5 shadow-leve ring-1 ring-papier-ligne">
+          {options.map((o) => (
+            <li key={o.value} role="option" aria-selected={o.value === valeur}>
+              <button type="button" onClick={() => (onChange(o.value), setOuvert(false))} className={cn('flex w-full cursor-pointer items-center justify-between gap-3 rounded-[10px] px-3 py-2.5 text-left text-[14.5px] hover:bg-papier', o.value === valeur && 'bg-brand-50 font-bold text-brand-900')}>
+                <span className="flex min-w-0 items-center gap-1.5">{o.value === valeur && <Check className="size-4 shrink-0" aria-hidden />}<span className="truncate">{o.label}</span></span>
+                <span className="shrink-0 text-[12.5px] font-normal text-encre-doux">{o.info}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Emplois du temps (décision 036).
+ * Secrétaire avec l'accès « Création des emplois du temps » : crée la grille de chaque classe.
+ * Administrateur (lectureSeule) : consulte et imprime, par classe ou par enseignant.
+ * L'emploi du temps d'un enseignant est déduit automatiquement de celui des classes.
+ */
+export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolean }) {
   const { etat, ajouter, enlever } = useSecretariat();
   const toast = useToast();
+  const [params] = useSearchParams();
   const classes = visibles(etat.classes);
+  const profs = visibles(etat.enseignants);
+  const [vue, setVue] = useState<'classe' | 'prof'>(params.get('vue') === 'prof' ? 'prof' : 'classe');
   const [classe, setClasse] = useState(() => classes.find((c) => c.nom === 'Tle C')?.nom ?? classes[0]?.nom ?? '');
+  const [prof, setProf] = useState(() => {
+    const p = profs.find((e) => etat.creneaux.some((c) => duProf(c, cleProf(e)))) ?? profs[0];
+    return p ? cleProf(p) : '';
+  });
   const [ajout, setAjout] = useState<{ jour: Creneau['jour']; plage: Creneau['plage'] } | null>(null);
-  const creneaux = etat.creneaux.filter((c) => c.classe === classe);
+  const enseignant = profs.find((e) => cleProf(e) === prof);
+  const nomProf = enseignant ? `${enseignant.civilite} ${enseignant.nom} ${enseignant.prenom}` : prof;
+  const creneaux = vue === 'classe' ? etat.creneaux.filter((c) => c.classe === classe) : etat.creneaux.filter((c) => duProf(c, prof));
   const cellule = (jour: string, plage: string) => creneaux.find((c) => c.jour === jour && c.plage === plage);
+  const modifiable = !lectureSeule && vue === 'classe';
+  const titreGrille = vue === 'classe' ? `Emploi du temps de la ${classe}` : `Emploi du temps de ${nomProf}`;
+  const ligne1 = (c: Creneau) => (vue === 'classe' ? c.matiere : c.classe);
+  const ligne2 = (c: Creneau) => (vue === 'classe' ? c.prof : c.matiere);
+
+  const chiffres: [string, string | number][] =
+    vue === 'classe'
+      ? [['Heures par semaine', `${creneaux.length * HEURES_PLAGE} h`], ['Matières', new Set(creneaux.map((c) => c.matiere)).size], ['Professeur principal', classes.find((c) => c.nom === classe)?.pp ?? '—']]
+      : [['Heures par semaine', `${creneaux.length * HEURES_PLAGE} h`], ['Classes', [...new Set(creneaux.map((c) => c.classe))].join(', ') || '—'], ['Cours par semaine', creneaux.length]];
 
   const imprimerGrille = () =>
-    imprimer(`Emploi du temps ${classe}`, `${entete(`Emploi du temps · ${classe}`)}
+    imprimer(titreGrille, `${entete(titreGrille)}
+      <p>${chiffres.map(([k, v]) => `${html(k)} : <b>${html(v)}</b>`).join(' · ')}</p>
       <table><tr><th>Horaire</th>${jours.map((j) => `<th>${j}</th>`).join('')}</tr>
-      ${plages.map((p) => `<tr><th>${p}</th>${jours.map((j) => { const c = cellule(j, p); return `<td>${c ? `<b>${html(c.matiere)}</b><br/>${html(c.prof)}<br/><small>${html(c.salle)}</small>` : ''}</td>`; }).join('')}</tr>`).join('')}
+      ${plages.map((p) => `<tr><th>${p}</th>${jours.map((j) => { const c = cellule(j, p); return `<td>${c ? `<b>${html(ligne1(c))}</b><br/>${html(ligne2(c))}<br/><small>${html(c.salle)}</small>` : ''}</td>`; }).join('')}</tr>`).join('')}
       </table>`);
 
   const retirerCreneau = (c: Creneau) => {
@@ -170,19 +241,51 @@ export function EmploisDuTemps() {
     toast('Créneau retiré.');
   };
 
+  const optionsClasses = classes.map((c) => {
+    const n = etat.creneaux.filter((x) => x.classe === c.nom).length;
+    return { value: c.nom, label: c.nom, info: n ? `${n} cours` : 'pas encore créé' };
+  });
+  const optionsProfs = profs.map((e) => {
+    const n = etat.creneaux.filter((x) => duProf(x, cleProf(e))).length;
+    return { value: cleProf(e), label: `${e.civilite} ${e.nom} ${e.prenom}`, info: n ? `${n * HEURES_PLAGE} h / semaine` : 'aucun cours' };
+  });
+
   return (
     <>
-      <Titre titre="Emplois du temps" texte="Construisez l’emploi du temps de chaque classe. Les conflits d’enseignant et de salle sont détectés automatiquement." action={<Button variant="secondary" icon={Printer} onClick={imprimerGrille} disabled={!creneaux.length}>Imprimer</Button>} />
-      <div className="mb-5 flex flex-wrap gap-2">
-        {classes.map((c) => {
-          const n = etat.creneaux.filter((x) => x.classe === c.nom).length;
-          return (
-            <button key={c.id} onClick={() => setClasse(c.nom)} aria-pressed={c.nom === classe} className={`min-h-10 cursor-pointer rounded-xl px-3.5 text-sm font-semibold ring-1 ring-inset ${c.nom === classe ? 'bg-brand-700 text-white ring-brand-700' : 'bg-white ring-papier-ligne hover:ring-brand-300'}`}>
-              {c.nom} <span className={c.nom === classe ? 'text-brand-200' : 'text-encre-pale'}>· {n}/{jours.length * plages.length}</span>
-            </button>
-          );
-        })}
+      <Titre
+        titre="Emplois du temps"
+        texte={lectureSeule ? 'Consultez l’emploi du temps de chaque classe et de chaque enseignant. Ils sont créés par les secrétaires qui ont l’accès.' : 'Construisez l’emploi du temps de chaque classe. Celui de chaque enseignant se remplit tout seul. Les conflits d’enseignant et de salle sont détectés automatiquement.'}
+      />
+      {lectureSeule && (
+        <div className="mb-5">
+          <Note><b>Consultation seule.</b> Pour créer ou modifier, donnez l’accès « Création des emplois du temps » à une secrétaire dans <Link to="/direction/secretaires" className="font-semibold underline">Secrétaires</Link>.</Note>
+        </div>
+      )}
+      <section className="mb-5 flex flex-col gap-5 rounded-[22px] bg-white p-5 shadow-feuille sm:flex-row sm:items-end sm:p-6">
+        <div>
+          <p className="field-label">1. Voir</p>
+          <Segmented label="Voir" value={vue} onChange={setVue} options={[{ value: 'classe', label: 'Par classe' }, { value: 'prof', label: 'Par enseignant' }]} />
+        </div>
+        {vue === 'classe' ? (
+          <Selecteur key="classe" label="2. Choisir une classe" valeur={classe} options={optionsClasses} onChange={setClasse} />
+        ) : (
+          <Selecteur key="prof" label="2. Choisir un enseignant" valeur={prof} options={optionsProfs} onChange={setProf} />
+        )}
+      </section>
+
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-[21px] font-bold">{titreGrille}</h2>
+        <Button variant="secondary" icon={Printer} onClick={imprimerGrille} disabled={!creneaux.length}>Imprimer</Button>
       </div>
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {chiffres.map(([k, v]) => (
+          <div key={k} className="min-w-0 rounded-2xl bg-white px-5 py-4 shadow-feuille">
+            <p className="text-[13px] text-encre-doux">{k}</p>
+            <p className="truncate font-display text-[22px] font-extrabold">{v}</p>
+          </div>
+        ))}
+      </div>
+
       <section className="overflow-x-auto rounded-[22px] bg-white p-4 shadow-feuille sm:p-5">
         <div className="grid min-w-[820px] grid-cols-[110px_repeat(5,1fr)] gap-2">
           <span />
@@ -192,24 +295,33 @@ export function EmploisDuTemps() {
               <p className="flex items-center px-2 text-[13px] font-semibold text-encre-doux chiffres">{p}</p>
               {jours.map((j) => {
                 const c = cellule(j, p);
-                return c ? (
-                  <div key={j} className="group relative min-h-24 rounded-xl bg-brand-50 p-3 ring-1 ring-inset ring-brand-100">
-                    <p className="pr-6 text-[14px] font-bold leading-snug text-brand-900">{c.matiere}</p>
-                    <p className="mt-1 text-xs text-brand-800">{c.prof}</p>
-                    <p className="text-xs text-encre-doux">{c.salle}</p>
-                    <button onClick={() => retirerCreneau(c)} className="absolute right-1.5 top-1.5 grid size-8 cursor-pointer place-items-center rounded-lg text-encre-pale opacity-0 transition-opacity hover:bg-white hover:text-stylo focus:opacity-100 group-hover:opacity-100" aria-label={`Retirer ${c.matiere}, ${j} ${p}`}><Trash2 className="size-4" /></button>
-                  </div>
-                ) : (
+                if (c)
+                  return (
+                    <div key={j} className="group relative min-h-24 rounded-xl bg-brand-50 p-3 shadow-[inset_3px_0_0] shadow-brand-700 ring-1 ring-inset ring-brand-100">
+                      <p className="pr-6 text-[14px] font-bold leading-snug text-brand-900">{ligne1(c)}</p>
+                      <p className="mt-1 text-xs text-brand-800">{ligne2(c)}</p>
+                      <p className="text-xs text-encre-doux">{c.salle}</p>
+                      {modifiable && <button onClick={() => retirerCreneau(c)} className="absolute right-1.5 top-1.5 grid size-8 cursor-pointer place-items-center rounded-lg text-encre-pale opacity-0 transition-opacity hover:bg-white hover:text-stylo focus:opacity-100 group-hover:opacity-100" aria-label={`Retirer ${c.matiere}, ${j} ${p}`}><Trash2 className="size-4" /></button>}
+                    </div>
+                  );
+                return modifiable ? (
                   <button key={j} onClick={() => setAjout({ jour: j, plage: p })} className="grid min-h-24 cursor-pointer place-items-center rounded-xl border border-dashed border-papier-ligne text-encre-pale transition-colors hover:border-brand-300 hover:bg-brand-50/40 hover:text-brand-700" aria-label={`Ajouter un cours le ${j}, ${p}`}>
                     <Plus className="size-5" />
                   </button>
+                ) : (
+                  <div key={j} className="grid min-h-24 place-items-center rounded-xl bg-[repeating-linear-gradient(135deg,var(--color-papier)_0_8px,white_8px_16px)] text-xs text-encre-pale ring-1 ring-inset ring-papier-ligne/60">Libre</div>
                 );
               })}
             </div>
           ))}
         </div>
       </section>
-      {creneaux.length === 0 && <div className="mt-4"><Note>La {classe} n’a pas encore d’emploi du temps. Cliquez sur une case pour ajouter un cours.</Note></div>}
+      {creneaux.length === 0 && (
+        <div className="mt-4">
+          <Note>{vue === 'classe' ? `La ${classe} n’a pas encore d’emploi du temps.${modifiable ? ' Cliquez sur une case pour ajouter un cours.' : ''}` : `${nomProf} n’a encore aucun cours dans les emplois du temps des classes.`}</Note>
+        </div>
+      )}
+      {!lectureSeule && vue === 'prof' && creneaux.length > 0 && <p className="mt-3 text-[13px] text-encre-doux">Cette vue se remplit toute seule à partir des emplois du temps des classes. Pour changer un cours, passez par « Par classe ».</p>}
       {ajout && (
         <AjoutCreneau
           classe={classe}

@@ -30,6 +30,7 @@ import { Avatar } from '@/components/kit';
 import { ecole } from '@/data/demo';
 import { demandesCorrection, elevesDe, notificationsEnseignant, profils, type ProfilEnseignant } from '@/data/enseignant';
 import logoFranck from '@/assets/logo-franck.svg';
+import { SecretariatProvider } from '../secretariat/store';
 
 /* =========================================================
  * Enseignant connecté et permissions
@@ -149,6 +150,7 @@ export default function EspaceEnseignant() {
     );
 
   return (
+    <SecretariatProvider>
     <EnseignantCtx.Provider value={{ profil, cle, titulaire }}>
       <div className="min-h-dvh bg-papier lg:pl-[288px]">
         {/* Barre latérale (ordinateur) */}
@@ -270,5 +272,6 @@ export default function EspaceEnseignant() {
         </main>
       </div>
     </EnseignantCtx.Provider>
+    </SecretariatProvider>
   );
 }
