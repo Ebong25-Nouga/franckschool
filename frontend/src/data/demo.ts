@@ -13,6 +13,8 @@ export const ecole = {
   email: 'contact@etoiles.cm',
   annee: '2026-2027',
   devise: 'Travail · Discipline · Réussite',
+  /** Nom court unique : le lien de l'école est franckschool.cm/etoiles */
+  lien: 'etoiles',
 };
 
 /* ---------- Calendrier camerounais : 3 trimestres, 6 séquences ---------- */

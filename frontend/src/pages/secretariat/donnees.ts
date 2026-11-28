@@ -36,6 +36,8 @@ export interface Parent extends Trace {
   email?: string;
   profession?: string;
   adresse?: string;
+  /** Accès à l'espace parent : remise des identifiants (jamais le code lui-même) */
+  acces?: { remisLe: string; par: string; canal: 'WhatsApp' | 'En personne'; connecteLe?: string };
 }
 export interface Enseignant extends Trace {
   id: number;
@@ -234,7 +236,7 @@ export interface Etat {
 }
 
 /* ---------------- Dates ---------------- */
-export const VERSION_DONNEES = 1;
+export const VERSION_DONNEES = 2;
 const pad = (n: number, l = 2) => String(n).padStart(l, '0');
 export const isoJour = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const isoMinute = (d: Date) => `${isoJour(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -277,6 +279,8 @@ export function etatInitial(): Etat {
     adresse: `${quartiers[i % quartiers.length]}, Yaoundé`,
     email: i % 4 === 0 ? `${e.nom.toLowerCase().replace(/\s/g, '')}.${e.id}@gmail.com` : undefined,
     etat: 'actif',
+    // Une partie des parents a déjà reçu son accès ; certains se sont déjà connectés
+    acces: i % 3 === 2 ? undefined : { remisLe: isoMinute(ilYa(20 - (i % 15), 10, 15)), par: i % 2 ? 'Nadine Ekotto' : 'Paul Biyong', canal: i % 4 === 0 ? 'En personne' : 'WhatsApp', connecteLe: i % 5 === 1 ? undefined : isoMinute(ilYa(10 - (i % 9), 19, 30)) },
   }));
 
   const enseignants: Enseignant[] = professeurs.map((p) => {

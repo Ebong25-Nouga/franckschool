@@ -1,4 +1,5 @@
-import { Banknote, CheckCircle2, Printer, RotateCcw, Search, UserPlus } from 'lucide-react';
+import { Banknote, CheckCircle2, KeyRound, Printer, RotateCcw, Search, UserPlus } from 'lucide-react';
+import { RemiseAcces } from './Personnes';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bloc, Chiffre, Titre } from '@/components/espace';
@@ -74,6 +75,7 @@ function NouvelleInscription() {
   const [modeTuteur, setModeTuteur] = useState<'nouveau' | 'existant'>('nouveau');
   const [essai, setEssai] = useState(false);
   const [fait, setFait] = useState<EleveS | null>(null);
+  const [remise, setRemise] = useState(false);
   const [q, setQ] = useState('');
 
   const places = (nom: string) => {
@@ -135,7 +137,8 @@ function NouvelleInscription() {
     toast(`${eleve.nom} ${eleve.prenom} est inscrit(e) en ${eleve.classe}.`);
   };
 
-  if (fait)
+  if (fait) {
+    const tuteur = etat.parents.find((x) => x.id === fait.parentIds[0]);
     return (
       <Bloc>
         <div className="flex flex-col items-center py-6 text-center">
@@ -143,14 +146,29 @@ function NouvelleInscription() {
           <h2 className="mt-4 font-display text-2xl font-bold">Inscription enregistrée</h2>
           <p className="mt-1 text-encre-doux">{nomEleve(fait)} · {fait.classe}</p>
           <p className="mt-4 rounded-xl bg-papier px-5 py-3 font-display text-xl font-bold chiffres">Matricule {fait.matricule}</p>
+          {tuteur && (
+            <div className="mt-6 w-full max-w-lg rounded-2xl bg-brand-50/70 p-4 text-left ring-1 ring-inset ring-brand-100">
+              <p className="text-sm font-semibold">Espace parent de {tuteur.nom}</p>
+              {tuteur.acces ? (
+                <p className="mt-1 text-[13px] text-encre-doux">Ce parent a déjà un accès (remis le {dateFr(tuteur.acces.remisLe)}). Il verra ce nouvel enfant dans son espace.</p>
+              ) : (
+                <>
+                  <p className="mt-1 text-[13px] text-encre-doux">Remettez-lui son identifiant et son code, par WhatsApp en privé ou en personne.</p>
+                  <Button className="mt-3" icon={KeyRound} onClick={() => setRemise(true)}>Remettre l’accès au parent</Button>
+                </>
+              )}
+            </div>
+          )}
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <Button variant="secondary" icon={Printer} onClick={() => ficheInscription(fait, fait.tuteur, fait.telephone)}>Imprimer la fiche</Button>
             {peut('caisse') && <Link to={`/secretariat/caisse?encaisser=1&eleve=${fait.id}`}><Button icon={Banknote}>Encaisser les frais d’inscription</Button></Link>}
             <Button variant="ghost" onClick={() => { setFait(null); setF({ ...vide, classe: f.classe }); setEssai(false); }}>Inscrire un autre élève</Button>
           </div>
         </div>
+        {remise && tuteur && <RemiseAcces parentId={tuteur.id} onClose={() => setRemise(false)} />}
       </Bloc>
     );
+  }
 
   const err = (k: keyof typeof erreurs) => essai && erreurs[k];
   const parents = visibles(etat.parents).filter((x) => q.trim() && `${x.nom} ${x.telephone}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 5);

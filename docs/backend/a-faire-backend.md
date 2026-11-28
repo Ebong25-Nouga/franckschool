@@ -51,3 +51,15 @@ Dernière mise à jour : 25/11/2026.
 | B20 | Calculs pour le titulaire : moyennes générales provisoires, moyennes par matière, état de saisie par matière, enseignants en retard | Ma classe principale | 016 |
 | B21 | Emploi du temps : fonctionnement à définir (actuellement provisoire, données d'exemple) | Emploi du temps | À définir |
 | B22 | Générer le PDF de l’emploi du temps de l’enseignant (bouton « Télécharger en PDF » déjà en place) | Emploi du temps | Demande du 25/11 |
+
+## Accès des parents (décisions 022 à 024, 28/11/2026)
+
+| # | À faire | Interface concernée | Décision |
+|---|---|---|---|
+| B23 | Chaque établissement a un **nom court unique** (`etablissements.slug`, exemple `etoiles`). Le lien `franckschool.cm/etoiles` ouvre la connexion de cette école (nom, logo, couleur) | Connexion de l'école | 022 |
+| B24 | Compte parent : identifiant = téléphone, **unique par établissement** (contrainte unique `etablissement_id` + `telephone`). Le même numéro dans une autre école est un autre compte | Parents et tuteurs | 022, 024 |
+| B25 | Code provisoire de 6 chiffres : montré une seule fois à la secrétaire, enregistré **chiffré**, expire après 7 jours, changement obligatoire à la première connexion ; « Nouveau code » rend l'ancien inutilisable | Remise de l'accès | 023 |
+| B26 | Enregistrer la remise de l'accès : date, secrétaire, moyen (WhatsApp ou en personne), première connexion ; tout au journal | Parents et tuteurs | 023 |
+| B27 | Connexion : chercher le numéro **dans l'école du lien uniquement** ; blocage temporaire après 5 essais ratés | Connexion de l'école | 022 |
+| B28 | Chaque requête du parent : filtre école + filtre « mes enfants » (table qui relie élèves et tuteurs) ; un élève non lié répond « Accès interdit » et la tentative est notée au journal | Tout l'espace parent | 022 |
+| B29 | Envoi WhatsApp : pour l'instant un lien WhatsApp avec message prérempli (pas d'API WhatsApp payante) | Remise de l'accès, partage du lien | 023 |

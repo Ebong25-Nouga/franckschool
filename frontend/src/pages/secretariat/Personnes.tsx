@@ -1,9 +1,11 @@
-import { Copy, KeyRound, Link2, Pencil, Power, UserPlus, Users, Users2, X } from 'lucide-react';
+import { Copy, KeyRound, Link2, MessageCircle, Pencil, Power, Share2, UserCheck, UserPlus, Users, Users2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Titre } from '@/components/espace';
 import { Avatar, Button, EmptyState, IconButton, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
-import { BoutonsRetrait, Champ, ChoisirEleve, Grille, Liste, ModalMotif, nomEleve, Note, Pagination, Saisie } from './commun';
+import { BoutonsRetrait, Champ, ChoisirEleve, dateFr, Grille, lienEcole, lienWhatsApp, Liste, ModalMotif, nomEleve, Note, Pagination, Saisie } from './commun';
+import { ecole } from '@/data/demo';
+import { isoMinute } from './donnees';
 import type { Enseignant, Parent } from './donnees';
 import { useSecretariat, visibles } from './store';
 
@@ -27,18 +29,28 @@ export function Parents() {
   }, [params, setParams]);
   const [edition, setEdition] = useState<Parent | 'nouveau' | null>(null);
   const [lier, setLier] = useState<Parent | null>(null);
+  const [acces, setAcces] = useState<Parent | null>(null);
+  const [partage, setPartage] = useState(false);
+  const [filtreAcces, setFiltreAcces] = useState('Tous');
   const t = q.trim().toLowerCase();
-  const liste = visibles(etat.parents).filter((p) => !t || `${p.nom} ${p.telephone} ${p.email ?? ''}`.toLowerCase().includes(t)).sort((a, b) => a.nom.localeCompare(b.nom));
+  const etatAcces = (p: Parent) => (!p.acces ? 'Pas encore remis' : p.acces.connecteLe ? 'Connecté' : 'Remis, pas encore connecté');
+  const liste = visibles(etat.parents)
+    .filter((p) => !t || `${p.nom} ${p.telephone} ${p.email ?? ''}`.toLowerCase().includes(t))
+    .filter((p) => filtreAcces === 'Tous' || etatAcces(p) === filtreAcces)
+    .sort((a, b) => a.nom.localeCompare(b.nom));
   const enfants = (p: Parent) => visibles(etat.eleves).filter((e) => e.parentIds.includes(p.id));
 
   return (
     <>
-      <Titre titre="Parents et tuteurs" texte="Un parent peut suivre plusieurs enfants. Liez-le à chaque enfant pour qu’il les voie tous dans son espace." action={<Button icon={UserPlus} onClick={() => setEdition('nouveau')}>Ajouter un parent</Button>} />
+      <Titre titre="Parents et tuteurs" texte="Un parent peut suivre plusieurs enfants. Liez-le à chaque enfant pour qu’il les voie tous dans son espace." action={<div className="flex flex-wrap gap-2"><Button variant="secondary" icon={Share2} onClick={() => setPartage(true)}>Partager le lien de l’école</Button><Button icon={UserPlus} onClick={() => setEdition('nouveau')}>Ajouter un parent</Button></div>} />
       <section className="rounded-[22px] bg-white shadow-feuille">
-        <div className="p-5 sm:p-6"><SearchInput value={q} onChange={(v) => (setQ(v), setPage(1))} label="Rechercher" placeholder="Nom, téléphone ou e-mail" className="max-w-md" /></div>
+        <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-[1.6fr_1fr]">
+          <SearchInput value={q} onChange={(v) => (setQ(v), setPage(1))} label="Rechercher" placeholder="Nom, téléphone ou e-mail" />
+          <Liste aria-label="Accès à l’espace parent" value={filtreAcces} onChange={(e) => (setFiltreAcces(e.target.value), setPage(1))} options={['Tous', 'Pas encore remis', 'Remis, pas encore connecté', 'Connecté']} />
+        </div>
         {liste.length === 0 ? <EmptyState icon={Users} title="Aucun parent" text="Aucun parent ne correspond à votre recherche." /> : (
           <>
-            <Table caption="Parents et tuteurs" head={['Parent ou tuteur', 'Contact', 'Enfants', { label: 'Actions', sr: true }]} minWidth={760}>
+            <Table caption="Parents et tuteurs" head={['Parent ou tuteur', 'Contact', 'Enfants', 'Accès à l’espace parent', { label: 'Actions', sr: true }]} minWidth={1000}>
               {liste.slice((page - 1) * 12, page * 12).map((p) => (
                 <tr key={p.id}>
                   <Td><div className="flex items-center gap-3"><Avatar name={p.nom} /><div><p className="font-semibold">{p.nom}</p><p className="text-xs text-encre-doux">{p.lien}{p.profession ? ` · ${p.profession}` : ''}</p></div></div></Td>
@@ -62,6 +74,17 @@ export function Parents() {
                       {enfants(p).length === 0 && <span className="text-xs text-encre-pale">Aucun</span>}
                     </div>
                   </Td>
+                  <Td>
+                    {!p.acces ? (
+                      <Button size="sm" icon={KeyRound} onClick={() => setAcces(p)}>Remettre l’accès</Button>
+                    ) : (
+                      <div>
+                        <Pill tone={p.acces.connecteLe ? 'valide' : 'feutre'}>{p.acces.connecteLe ? 'Connecté' : 'Remis, pas encore connecté'}</Pill>
+                        <p className="mt-1 text-xs text-encre-doux">{p.acces.canal === 'WhatsApp' ? 'Par WhatsApp' : 'En personne'} le {dateFr(p.acces.remisLe)} · {p.acces.par}</p>
+                        <button onClick={() => setAcces(p)} className="mt-1 cursor-pointer text-xs font-semibold text-brand-700 hover:underline">Nouveau code</button>
+                      </div>
+                    )}
+                  </Td>
                   <Td className="text-right">
                     <div className="flex justify-end">
                       <IconButton icon={Link2} label={`Lier un enfant à ${p.nom}`} onClick={() => setLier(p)} />
@@ -78,6 +101,8 @@ export function Parents() {
       </section>
       {edition && <EditionParent p={edition === 'nouveau' ? null : edition} onClose={() => setEdition(null)} />}
       {lier && <LierEnfant p={lier} onClose={() => setLier(null)} />}
+      {acces && <RemiseAcces parentId={acces.id} onClose={() => setAcces(null)} />}
+      {partage && <PartageLien onClose={() => setPartage(false)} />}
     </>
   );
 }
@@ -302,5 +327,102 @@ function CompteEnseignant({ e, onClose }: { e: Enseignant; onClose: () => void }
       }}
       onClose={onClose}
     />
+  );
+}
+
+/* =========================================================
+ * Accès à l'espace parent
+ * Les identifiants sont remis à chaque parent, en privé : par WhatsApp ou en personne.
+ * Le code n'est jamais enregistré en clair : il n'est affiché qu'une fois, ici.
+ * ======================================================= */
+const nouveauCode = () => String(Math.floor(100000 + Math.random() * 900000));
+
+export function RemiseAcces({ parentId, onClose }: { parentId: number; onClose: () => void }) {
+  const { etat, modifier, utilisateur } = useSecretariat();
+  const toast = useToast();
+  const p = etat.parents.find((x) => x.id === parentId);
+  const [code] = useState(nouveauCode);
+  const [envoye, setEnvoye] = useState(false);
+  if (!p) return null;
+  const renouvellement = !!p.acces;
+  const enfants = visibles(etat.eleves).filter((e) => e.parentIds.includes(p.id));
+  const telOkP = telOk(p.telephone);
+  const message = `Bonjour ${p.nom}, voici vos identifiants pour l’espace parents du ${ecole.nom}${enfants.length ? ` (${enfants.map((e) => e.prenom).join(', ')})` : ''}.\n\nLien : ${lienEcole}\nIdentifiant : ${p.telephone}\nCode provisoire : ${code}\n\nÀ la première connexion, vous choisirez votre propre mot de passe. Ne partagez ce code avec personne.`;
+
+  const enregistrer = (canal: 'WhatsApp' | 'En personne') => {
+    modifier('parents', p.id, { acces: { remisLe: isoMinute(new Date()), par: utilisateur, canal } }, {
+      operation: renouvellement ? 'Nouveau code' : 'Remise de l’accès',
+      module: 'Parents et tuteurs',
+      element: `${p.nom} (${p.telephone})`,
+      avant: renouvellement ? 'Ancien code (désormais inutilisable)' : 'Pas d’accès',
+      apres: canal === 'WhatsApp' ? 'Envoyé par WhatsApp' : 'Remis en personne',
+    });
+    toast(canal === 'WhatsApp' ? 'Accès envoyé par WhatsApp et noté au journal.' : 'Accès remis en personne et noté au journal.');
+    onClose();
+  };
+
+  return (
+    <Modal
+      title={renouvellement ? 'Nouveau code pour le parent' : 'Remettre l’accès au parent'}
+      lead={`${p.nom} · ${p.lien}`}
+      onClose={onClose}
+      footer={
+        telOkP ? (
+          <>
+            <Button variant="secondary" icon={UserCheck} onClick={() => enregistrer('En personne')}>Remis en personne</Button>
+            {!envoye ? (
+              <a href={lienWhatsApp(message, p.telephone)} target="_blank" rel="noreferrer" onClick={() => setEnvoye(true)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-[#128C4A] px-4 text-sm font-semibold text-white hover:bg-[#0E7A40]">
+                <MessageCircle className="size-4" aria-hidden /> Envoyer par WhatsApp
+              </a>
+            ) : (
+              <Button variant="success" onClick={() => enregistrer('WhatsApp')}>J’ai bien envoyé le message</Button>
+            )}
+          </>
+        ) : (
+          <Button onClick={onClose}>Fermer</Button>
+        )
+      }
+    >
+      {!telOkP ? (
+        <Note ton="feutre">Le numéro de ce parent n’est pas un numéro camerounais valide. Corrigez-le d’abord avec « Modifier ».</Note>
+      ) : (
+        <div className="space-y-3">
+          {renouvellement && <Note ton="feutre">Dès que ce nouveau code est remis, l’ancien ne fonctionne plus.</Note>}
+          {[['Lien de l’école', lienEcole], ['Identifiant (téléphone)', p.telephone], ['Code provisoire', code]].map(([k, v]) => (
+            <div key={k} className="flex items-center justify-between gap-3 rounded-xl bg-papier px-4 py-3">
+              <span className="min-w-0"><span className="block text-[13px] text-encre-doux">{k}</span><span className={k === 'Code provisoire' ? 'font-mono text-[22px] font-bold tracking-[0.2em]' : 'font-semibold'}>{v}</span></span>
+              <IconButton icon={Copy} label={`Copier : ${k}`} onClick={() => navigator.clipboard?.writeText(v).then(() => toast('Copié.'), () => undefined)} />
+            </div>
+          ))}
+          <p className="text-[13px] leading-relaxed text-encre-doux">
+            Remettez ces informations <b>à ce parent uniquement</b> : en message WhatsApp privé, ou en personne au secrétariat. Ne les mettez jamais dans le groupe. Le code ne sera plus affiché après fermeture.
+          </p>
+          {envoye && <Note>WhatsApp s’est ouvert avec le message prêt. Envoyez-le, puis confirmez ci-dessous.</Note>}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/** Partage du lien de l'école (pour le groupe WhatsApp des parents) : aucun identifiant dedans. */
+function PartageLien({ onClose }: { onClose: () => void }) {
+  const { journaliser } = useSecretariat();
+  const toast = useToast();
+  const message = `Chers parents, voici le lien de l’espace parents du ${ecole.nom} : ${lienEcole}\n\nConnectez-vous avec l’identifiant et le code que le secrétariat vous a remis personnellement. Si vous ne les avez pas encore, passez au secrétariat.`;
+  return (
+    <Modal title="Partager le lien de l’école" lead="À envoyer dans le groupe WhatsApp des parents. Le message ne contient aucun identifiant." onClose={onClose} footer={<>
+      <Button variant="secondary" icon={Copy} onClick={() => navigator.clipboard?.writeText(message).then(() => toast('Message copié.'), () => undefined)}>Copier le message</Button>
+      <a href={lienWhatsApp(message)} target="_blank" rel="noreferrer" onClick={() => journaliser({ operation: 'Partage du lien', module: 'Parents et tuteurs', element: `${lienEcole} (WhatsApp)` })} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-[#128C4A] px-4 text-sm font-semibold text-white hover:bg-[#0E7A40]">
+        <MessageCircle className="size-4" aria-hidden /> Ouvrir WhatsApp
+      </a>
+    </>}>
+      <div className="rounded-xl bg-papier px-4 py-3">
+        <p className="text-[13px] text-encre-doux">Lien de l’école</p>
+        <p className="font-semibold">{lienEcole}</p>
+      </div>
+      <p className="mt-4 text-[13px] font-semibold text-encre-doux">Message proposé</p>
+      <p className="mt-1.5 whitespace-pre-line rounded-xl bg-[#E7F7EC] px-4 py-3 text-[14px] leading-relaxed text-encre">{message}</p>
+      <p className="mt-3 text-[13px] text-encre-doux">Dans WhatsApp, choisissez le groupe des parents.</p>
+    </Modal>
   );
 }

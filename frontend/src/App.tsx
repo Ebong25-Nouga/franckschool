@@ -30,6 +30,7 @@ import { Enseignants, Parents } from './pages/secretariat/Personnes';
 import { Annees, Classes as ClassesSecretariat, Matieres } from './pages/secretariat/Structure';
 import { Absences as AbsencesSecretariat, Discipline, EmploisDuTemps } from './pages/secretariat/VieScolaire';
 import Connexion from './pages/public/Connexion';
+import ConnexionEcole from './pages/public/ConnexionEcole';
 import MotDePasseOublie from './pages/public/MotDePasseOublie';
 
 function Protege({ espaces, children }: { espaces: Espace[]; children: ReactNode }) {
@@ -136,6 +137,8 @@ export default function App() {
               <Route path="/parent/compte" element={<ParametresCompte />} />
             </Route>
 
+            {/* Lien propre à chaque école, partagé dans le groupe WhatsApp des parents (décision 022) */}
+            <Route path="/:ecole" element={<ConnexionEcole />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>

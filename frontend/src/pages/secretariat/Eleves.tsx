@@ -1,11 +1,11 @@
-import { ArrowRightLeft, Banknote, FileText, GraduationCap, LogOut as Sortie, Pencil, Phone, Printer, UserPlus, X } from 'lucide-react';
+import { ArrowRightLeft, Banknote, EyeOff, FileText, FolderOpen, GraduationCap, LogOut as Sortie, Pencil, Phone, Printer, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Titre } from '@/components/espace';
-import { Avatar, Button, Drawer, EmptyState, Gauge, Grade, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
+import { Avatar, Button, Drawer, EmptyState, Gauge, Grade, IconButton, Modal, Pill, SearchInput, Segmented, Table, Td, useToast } from '@/components/kit';
 import { appreciation } from '@/data/demo';
 import { entete, html, imprimer } from '@/lib/imprimer';
-import { BoutonsRetrait, Champ, dateFr, Grille, Liste, montant, nomEleve, Pagination, Saisie, useDroit, Zone } from './commun';
+import { BoutonsRetrait, Champ, dateFr, Grille, Liste, MenuActions, ModalMotif, montant, nomEleve, Pagination, Saisie, useDroit, Zone, type ActionMenu } from './commun';
 import type { EleveS, TypeDepart } from './donnees';
 import { aujourdhui, useSecretariat, visibles } from './store';
 
@@ -22,6 +22,9 @@ export default function Eleves() {
   const [paiement, setPaiement] = useState('Tous');
   const [page, setPage] = useState(1);
   const [ouvert, setOuvert] = useState<number | null>(null);
+  const [action, setAction] = useState<{ type: 'modifier' | 'classe' | 'depart' | 'masque' | 'supprime'; id: number } | null>(null);
+  const { retirer } = useSecretariat();
+  const toast = useToast();
   const [params, setParams] = useSearchParams();
   // Ouverture directe d'un dossier depuis la recherche de l'en-tête
   useEffect(() => {
@@ -49,6 +52,7 @@ export default function Eleves() {
   const pageListe = liste.slice((page - 1) * PAR_PAGE, page * PAR_PAGE);
   const filtre = (f: (v: string) => void) => (v: string) => (f(v), setPage(1));
   const choisi = etat.eleves.find((e) => e.id === ouvert);
+  const cible = etat.eleves.find((e) => e.id === action?.id);
 
   return (
     <>
@@ -81,7 +85,7 @@ export default function Eleves() {
           <EmptyState icon={GraduationCap} title="Aucun élève" text={onglet === 'partis' ? 'Aucun départ enregistré pour cette année.' : 'Aucun élève ne correspond à ces critères.'} />
         ) : (
           <>
-            <Table caption="Liste des élèves" head={['Élève', 'Classe', 'Statut', 'Tuteur', 'Scolarité', { label: 'Moyenne', align: 'right' }]} minWidth={860}>
+            <Table caption="Liste des élèves" head={['Élève', 'Classe', 'Statut', 'Tuteur', 'Scolarité', { label: 'Moyenne', align: 'right' }, { label: 'Actions', align: 'right' }]} minWidth={960}>
               {pageListe.map((e) => (
                 <tr key={e.id} onClick={() => setOuvert(e.id)} className="cursor-pointer transition-colors hover:bg-papier/70">
                   <Td>
@@ -98,6 +102,25 @@ export default function Eleves() {
                   <Td><p className="truncate">{e.tuteur}</p><p className="text-xs text-encre-doux">{e.telephone}</p></Td>
                   <Td className="w-48"><Gauge value={(e.paye / e.du) * 100} label={`Scolarité payée de ${nomEleve(e)}`} /></Td>
                   <Td className="text-right"><Grade value={e.moyenne} size="sm" /></Td>
+                  <Td className="text-right">
+                    <div className="flex justify-end" onClick={(x) => x.stopPropagation()}>
+                      {peut('eleves') && e.situation === 'inscrit' && <IconButton icon={Pencil} label={`Modifier ${nomEleve(e)}`} onClick={() => setAction({ type: 'modifier', id: e.id })} />}
+                      <MenuActions
+                        label={`Plus d’actions pour ${nomEleve(e)}`}
+                        actions={[
+                          { label: 'Voir le dossier', icone: FolderOpen, onClick: () => setOuvert(e.id) },
+                          ...(peut('eleves') && e.situation === 'inscrit'
+                            ? [
+                                { label: 'Changer de classe', icone: ArrowRightLeft, onClick: () => setAction({ type: 'classe', id: e.id }) },
+                                { label: 'Enregistrer un départ', icone: Sortie, onClick: () => setAction({ type: 'depart', id: e.id }) },
+                              ]
+                            : []),
+                          ...(peut('masquer') ? [{ label: 'Masquer', icone: EyeOff, onClick: () => setAction({ type: 'masque', id: e.id }) }] : []),
+                          ...(peut('supprimer') ? [{ label: 'Supprimer', icone: Trash2, danger: true, onClick: () => setAction({ type: 'supprime', id: e.id }) }] : []),
+                        ] as ActionMenu[]}
+                      />
+                    </div>
+                  </Td>
                 </tr>
               ))}
             </Table>
@@ -107,6 +130,22 @@ export default function Eleves() {
       </section>
 
       {choisi && <FicheEleve e={choisi} onClose={() => setOuvert(null)} />}
+      {cible && action?.type === 'modifier' && <ModifierEleve e={cible} onClose={() => setAction(null)} />}
+      {cible && action?.type === 'classe' && <ChangerClasse e={cible} onClose={() => setAction(null)} />}
+      {cible && action?.type === 'depart' && <Depart e={cible} onClose={() => setAction(null)} />}
+      {cible && (action?.type === 'masque' || action?.type === 'supprime') && (
+        <ModalMotif
+          titre={`${action.type === 'masque' ? 'Masquer' : 'Supprimer'} ${nomEleve(cible)}`}
+          texte={action.type === 'masque' ? 'L’élève disparaît de vos listes, mais reste visible pour l’administrateur.' : 'Suppression logique : l’élève est placé dans la corbeille de l’administrateur.'}
+          bouton={action.type === 'masque' ? 'Masquer' : 'Supprimer'}
+          danger={action.type === 'supprime'}
+          onValider={(motif) => {
+            retirer('eleves', cible.id, action.type as 'masque' | 'supprime', motif, { module: 'Élèves', element: `${nomEleve(cible)} (${cible.matricule})` });
+            toast(action.type === 'masque' ? 'Élève masqué. L’administrateur le voit toujours.' : 'Élève placé dans la corbeille de l’administrateur.');
+          }}
+          onClose={() => setAction(null)}
+        />
+      )}
     </>
   );
 }
