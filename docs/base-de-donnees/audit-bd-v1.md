@@ -1,6 +1,6 @@
 ---
 title: "FRANCK SCHOOL — Audit de la base de données"
-subtitle: "Rapport d'audit technique et modèle de données proposé — Version 1.0"
+subtitle: "Rapport d'audit technique et modèle de données proposé — Version 1.1"
 date: "24 novembre 2026"
 ---
 
@@ -8,7 +8,7 @@ date: "24 novembre 2026"
 
 | Élément | Description |
 |---|---|
-| Version | 1.0 — audit initial |
+| Version | 1.1 — ajout du modèle de bulletin et des bulletins trimestriels (28/11/2026) · 1.0 — audit initial (24/11/2026) |
 | Date | 24 novembre 2026 |
 | Documents analysés | *Document maître V1.0* et *Documentation de la base de données V1* (copies dans `docs/references/`) |
 | Base cible | MySQL 8.0, moteur InnoDB, encodage `utf8mb4` |
@@ -23,6 +23,12 @@ date: "24 novembre 2026"
 - **Pas de réductions** sur les frais (bourses, fratrie…) : le reste à payer se calcule uniquement à partir des frais de la classe.
 - La documentation du projet est conservée **dans le dépôt Git** (proposition par défaut, voir § 6).
 
+**Décisions du propriétaire intégrées dans la version 1.1 (28/11/2026) :**
+
+- Les bulletins sont produits **uniquement par trimestre** (décision 033). Le bulletin du 3e trimestre contient le bilan de l'année.
+- Chaque école règle son bulletin dans la page « Modèle de bulletin » (décision 034). Le modèle est enregistré dans une **nouvelle table versionnée** `modeles_bulletin` (option 1 choisie, décision 035) : chaque bulletin publié garde la version du modèle utilisée.
+- La discipline est gérée hors de la plateforme (décision 032) : **aucune table** de sanctions n'est prévue.
+
 # 1. Résumé de l'audit
 
 La structure proposée est **saine dans son découpage** : les domaines (accès, années, scolarité, pédagogie, notes, caisse, suivi, SaaS) sont bien séparés, l'inscription annuelle est distincte du dossier permanent de l'élève, et le circuit de remboursement est bien représenté.
@@ -32,7 +38,7 @@ Les corrections portent surtout sur **la sécurité de l'isolation entre écoles
 | Catégorie | Nombre | Tables |
 |---|---|---|
 | Tables conservées (colonnes précisées) | 41 | voir § 4 (dont `parametres_etablissements`, cité dans le document maître) |
-| Tables ajoutées | 6 | `utilisateur_permissions`, `changements_classe`, `historique_notes`, `bulletin_lignes`, `paiement_echeances`, `compteurs` |
+| Tables ajoutées | 7 | `utilisateur_permissions`, `changements_classe`, `historique_notes`, `bulletin_lignes`, `modeles_bulletin` (v1.1), `paiement_echeances`, `compteurs` |
 | Tables techniques Laravel ajoutées | 8 | `sessions`, `password_reset_tokens`, `personal_access_tokens`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs` |
 | Tables retirées de la base applicative | 6 | tables de documentation → dépôt Git (§ 6) |
 
@@ -148,6 +154,8 @@ Les années ne sont jamais supprimées : elles passent par les statuts `preparat
 - `bulletins` reçoit un **numéro de version** et un statut (`brouillon`, `publie`, `remplace`, `annule`). Une correction crée une **nouvelle version** ; l'ancienne passe à `remplace` et reste consultable.
 - Nouvelle table `bulletin_lignes` : copie **figée** des moyennes, coefficients et rangs par matière au moment de la génération. Le bulletin reste identique même si une note change plus tard.
 - Le fichier PDF est accompagné de son **empreinte SHA-256** pour prouver qu'il n'a pas été modifié.
+- *(v1.1)* La mise en page vient de la table `modeles_bulletin` (une ligne par version du modèle de chaque école). `bulletins.modele_bulletin_id` garde la version utilisée : un bulletin publié se réimprime à l'identique même si l'administrateur change le modèle ensuite.
+- *(v1.1)* Un bulletin est produit **par trimestre** uniquement ; celui du 3e trimestre porte en plus la moyenne et le rang annuels et la décision de fin d'année.
 
 **Calculs (système camerounais).** Moyenne de séquence par matière → moyenne de trimestre (moyenne des 2 séquences) → moyenne générale pondérée par les coefficients → rang dans la classe (ex æquo gérés). Les barèmes (note maximale, seuil de réussite, appréciations) sont dans `parametres_etablissements`.
 
@@ -218,10 +226,11 @@ Le fonctionnement de la caisse est **considéré comme terminé** et n'est pas m
 | seuil_reussite | DECIMAL(5,2) | défaut 10 | |
 | prefixe_matricule | VARCHAR(10) | N | |
 | prefixe_recu | VARCHAR(10) | N | |
-| entete_bulletin | TEXT | N | Texte officiel d'en-tête |
 | signature_chemin, cachet_chemin | VARCHAR(255) | N | |
 | bareme_appreciations | JSON | | Ex. `[{"min":16,"libelle":"Très bien"}, …]` |
 | options | JSON | N | Réglages futurs sans migration |
+
+*(v1.1)* L'ancienne colonne `entete_bulletin` est retirée : l'en-tête et toute la mise en page du bulletin sont dans `modeles_bulletin` (§ 4.4). Le logo, le nom, le signataire et le barème des appréciations restent ici et dans `etablissements` : ils ne sont pas enregistrés deux fois.
 
 ### utilisateurs — *conservée*
 
@@ -471,13 +480,16 @@ Unique : `(evaluation_id, inscription_id)`.
 
 | Colonne | Type | Contraintes | Note |
 |---|---|---|---|
-| etablissement_id, inscription_id, periode_id | BIGINT | FK composites | Trimestre ou année |
+| etablissement_id, inscription_id, periode_id | BIGINT | FK composites | **Trimestre uniquement** (v1.1, décision 033) |
 | classe_id | BIGINT | FK | Classe au moment de la génération |
 | version | SMALLINT | | 1, 2, 3… |
 | statut | VARCHAR(20) | | `brouillon`, `publie`, `remplace`, `annule` |
 | moyenne_generale | DECIMAL(5,2) | N | |
 | rang, effectif_classe | SMALLINT | N | |
 | moyenne_classe, moyenne_premier, moyenne_dernier | DECIMAL(5,2) | N | |
+| moyenne_annuelle | DECIMAL(5,2) | N | *(v1.1)* 3e trimestre seulement |
+| rang_annuel | SMALLINT | N | *(v1.1)* 3e trimestre seulement |
+| modele_bulletin_id | BIGINT | FK | *(v1.1)* Version du modèle utilisée, jamais modifiée après publication |
 | appreciation, decision | VARCHAR | N | |
 | observation_professeur_principal | TEXT | N | |
 | fichier_chemin | VARCHAR(255) | N | PDF sur disque privé |
@@ -489,7 +501,30 @@ Unique : `(evaluation_id, inscription_id)`.
 Unique : `(inscription_id, periode_id, version)`.
 
 ### bulletin_lignes — **ajoutée** (constat C6)
-`bulletin_id` FK, `matiere_id` FK, `matiere_nom` (copie), `professeur_nom` (copie), `coefficient`, `moyenne`, `total_pondere`, `rang_matiere`, `appreciation`. Copie figée : un bulletin publié ne change jamais.
+`bulletin_id` FK, `matiere_id` FK, `matiere_nom` (copie), `professeur_nom` (copie), `groupe` (copie), `coefficient`, `notes_sequences` (JSON, les 2 notes du trimestre), `moyenne`, `total_pondere`, `rang_matiere`, `moyenne_classe`, `note_min`, `note_max`, `appreciation`. Copie figée : un bulletin publié ne change jamais.
+
+### modeles_bulletin — **ajoutée** (v1.1, décisions 034-035)
+
+Partie fixe du bulletin, réglée par l'administrateur dans la page « Modèle de bulletin ». Chaque enregistrement crée une **nouvelle version** ; les anciennes restent (jamais modifiées ni supprimées).
+
+| Colonne | Type | Contraintes | Note |
+|---|---|---|---|
+| etablissement_id | BIGINT | FK | Chaque école a son modèle |
+| version | SMALLINT | | 1, 2, 3… |
+| actif | BOOLEAN | | Une seule version active par école (colonne générée + unique, comme l'année active § 3.3) |
+| titre | VARCHAR(100) | | « Bulletin de notes » ; le système ajoute « du 1er trimestre »… |
+| entete | JSON | | Pays, devise, ministère, délégations régionale et départementale, en français et en anglais |
+| logo_position | VARCHAR(10) | | `gauche`, `centre`, `droite` |
+| colonnes | JSON | | Colonnes affichées : enseignant, notes des séquences, total, rang, moyenne de classe, min–max, appréciation |
+| regrouper_matieres | BOOLEAN | | Groupes 1, 2, 3 avec sous-totaux |
+| afficher_photo, afficher_assiduite | BOOLEAN | | |
+| distinctions | JSON | | Ex. `[{"libelle":"Tableau d'honneur","min":12}, …]` |
+| titre_visa_parent, titre_professeur_principal | VARCHAR(60) | | Titres des cases de signature |
+| pied_page | VARCHAR(150) | N | « Aucun duplicata ne sera délivré » |
+| cree_par | BIGINT | FK | Administrateur qui a enregistré cette version |
+| created_at | TIMESTAMP | | |
+
+Unique : `(etablissement_id, version)`. Seul l'administrateur de l'école peut créer une version ; chaque enregistrement est aussi noté dans le journal d'activités.
 
 ## 4.5 Caisse, paiements et remboursements
 
@@ -691,6 +726,8 @@ erDiagram
     periodes_scolaires ||--o{ bulletins : "pour"
     bulletins ||--o{ bulletin_lignes : "détaille"
     bulletins |o--o| bulletins : "remplacé par"
+    etablissements ||--o{ modeles_bulletin : "versions"
+    modeles_bulletin ||--o{ bulletins : "mise en page"
 ```
 
 ## 5.5 Caisse
@@ -792,5 +829,6 @@ Si plus tard le propriétaire veut consulter ces documents depuis l'interface Su
 | D7 | Ajout du champ `code` dans `matieres` | 4.2 |
 | D8 | Documentation dans Git plutôt qu'en base | 6 |
 | D9 | Tables SaaS créées seulement à l'activation du module commercial | 4.8 |
+| D10 | *(v1.1)* Table versionnée `modeles_bulletin` et bulletins par trimestre uniquement — **choisie par le propriétaire le 28/11/2026** (option 1) | 3.5, 4.4 |
 
 Après validation, les livrables suivants seront produits : migrations Laravel, modèles et relations, données de départ (rôles, permissions, structure camerounaise des séquences), et tests automatiques des règles critiques (isolation des écoles, année active unique, circuit de remboursement, versions de bulletins).

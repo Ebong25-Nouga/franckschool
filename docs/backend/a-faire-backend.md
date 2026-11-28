@@ -66,7 +66,7 @@ Dernière mise à jour : 25/11/2026.
 
 ## Bulletins trimestriels et modèle (décisions 033-034)
 
-- **B30 — Modèle de bulletin par école** : table `modeles_bulletin` (ou colonne JSON dans les paramètres de l'école) : titre, en-tête FR/EN, place du logo, colonnes affichées, regroupement, distinctions (libellé + moyenne minimale), titres des signatures, bas de page. Modifiable uniquement par l'administrateur ; chaque modification est journalisée.
-- **B31 — Figer le modèle à la publication** : à la publication des bulletins d'une classe pour un trimestre, enregistrer une copie du modèle (ou le PDF produit) pour que les bulletins publiés ne changent plus si le modèle est modifié ensuite.
+- **B30 — Modèle de bulletin par école** : table versionnée `modeles_bulletin` (décision 035, audit BD v1.1 § 4.4) : titre, en-tête FR/EN, place du logo, colonnes affichées, regroupement, distinctions (libellé + moyenne minimale), titres des signatures, bas de page. Modifiable uniquement par l'administrateur ; chaque modification est journalisée.
+- **B31 — Figer le modèle à la publication** : à la publication des bulletins d'une classe pour un trimestre, enregistrer `bulletins.modele_bulletin_id` (version utilisée) pour que les bulletins publiés ne changent plus si le modèle est modifié ensuite.
 - **B32 — Génération des PDF côté serveur** : même mise en page que l'aperçu (`frontend/src/lib/bulletin.ts`), une ligne par matière de la classe, resserrage puis 2e page si la classe a beaucoup de matières. Le 3e trimestre ajoute le bilan de l'année (moyennes des trimestres, moyenne et rang annuels, décision).
 

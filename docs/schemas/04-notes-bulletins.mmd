@@ -8,3 +8,5 @@ erDiagram
     periodes_scolaires ||--o{ bulletins : "pour"
     bulletins ||--o{ bulletin_lignes : "détaille"
     bulletins |o--o| bulletins : "remplacé par"
+    etablissements ||--o{ modeles_bulletin : "versions"
+    modeles_bulletin ||--o{ bulletins : "mise en page"
