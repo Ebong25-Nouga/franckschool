@@ -237,6 +237,39 @@ export interface AnneeScolaire {
   statut: 'active' | 'preparation' | 'archivee';
   sequences: { n: number; debut: string; fin: string }[];
 }
+/** Partie fixe du bulletin, réglée par l'administrateur. Les données de l'élève sont remplies par le système. */
+export interface ModeleBulletin {
+  titre: string;
+  entete: { paysFr: string; paysEn: string; deviseFr: string; deviseEn: string; ministereFr: string; ministereEn: string; regionFr: string; regionEn: string; departementFr: string; departementEn: string };
+  logoPlace: 'gauche' | 'centre' | 'droite';
+  colonnes: { enseignant: boolean; sequences: boolean; total: boolean; rang: boolean; moyClasse: boolean; minMax: boolean; appreciation: boolean };
+  groupes: boolean;
+  photo: boolean;
+  assiduite: boolean;
+  distinctions: { libelle: string; min: number }[];
+  visaParent: string;
+  titrePP: string;
+  piedPage: string;
+}
+export const modeleBulletinDefaut: ModeleBulletin = {
+  titre: 'Bulletin de notes',
+  entete: {
+    paysFr: 'République du Cameroun', paysEn: 'Republic of Cameroon', deviseFr: 'Paix – Travail – Patrie', deviseEn: 'Peace – Work – Fatherland',
+    ministereFr: 'Ministère des Enseignements Secondaires', ministereEn: 'Ministry of Secondary Education',
+    regionFr: 'Délégation régionale du Centre', regionEn: 'Regional Delegation for the Centre',
+    departementFr: 'Délégation départementale du Mfoundi', departementEn: 'Divisional Delegation for Mfoundi',
+  },
+  logoPlace: 'centre',
+  colonnes: { enseignant: true, sequences: true, total: true, rang: true, moyClasse: true, minMax: true, appreciation: true },
+  groupes: true,
+  photo: true,
+  assiduite: true,
+  distinctions: [{ libelle: 'Tableau d’honneur', min: 12 }, { libelle: 'Encouragements', min: 14 }, { libelle: 'Félicitations', min: 16 }],
+  visaParent: 'Visa du parent',
+  titrePP: 'Le professeur principal',
+  piedPage: 'Aucun duplicata ne sera délivré',
+};
+
 export interface Parametres {
   nom: string;
   sigle: string;
@@ -251,6 +284,8 @@ export interface Parametres {
   titreSignataire: string;
   autorisation: string;
   mentions: { min: number; libelle: string }[];
+  /** Modèle du bulletin trimestriel (page « Modèle de bulletin ») */
+  modeleBulletin: ModeleBulletin;
   frais: { niveau: string; montant: number }[];
   tranches: { libelle: string; part: number; limite: string }[];
 }
@@ -287,7 +322,7 @@ export interface Etat {
 }
 
 /* ---------------- Dates ---------------- */
-export const VERSION_DONNEES = 6;
+export const VERSION_DONNEES = 7;
 const pad = (n: number, l = 2) => String(n).padStart(l, '0');
 export const isoJour = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const isoMinute = (d: Date) => `${isoJour(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -483,6 +518,7 @@ export function etatInitial(): Etat {
     nom: 'Collège Bilingue Les Étoiles', sigle: 'CBE', adresse: 'Rue 1.234, Bastos', ville: 'Yaoundé', telephone: '+237 222 20 30 40', email: 'contact@etoiles.cm', devise: 'Travail · Discipline · Réussite', couleur: '#1C32A5',
     signataire: 'Jean-Pierre Manga', titreSignataire: 'Le Principal', autorisation: 'Arrêté n° 2014/0457/MINESEC',
     mentions: [{ min: 18, libelle: 'Excellent' }, { min: 16, libelle: 'Très bien' }, { min: 14, libelle: 'Bien' }, { min: 12, libelle: 'Assez bien' }, { min: 10, libelle: 'Passable' }, { min: 8, libelle: 'Insuffisant' }, { min: 0, libelle: 'Faible' }],
+    modeleBulletin: modeleBulletinDefaut,
     frais: [{ niveau: 'Premier cycle (6ème à 3ème)', montant: 150000 }, { niveau: 'Second cycle (2nde à Tle)', montant: 185000 }],
     tranches: [{ libelle: 'Inscription', part: 17, limite: '2026-09-05' }, { libelle: '1re tranche', part: 33, limite: '2026-09-30' }, { libelle: '2e tranche', part: 33, limite: '2026-11-30' }, { libelle: '3e tranche', part: 17, limite: '2027-01-15' }],
   };
@@ -494,11 +530,10 @@ export function etatInitial(): Etat {
     { id: 5, quand: isoMinute(ilYa(4, 18, 30)), appareil: 'Chrome · Windows', lieu: 'Yaoundé', resultat: 'Réussie' },
   ];
 
-  const bulletins: Record<string, EtatBulletin> = Object.fromEntries([
-    ...nomsClasses.map((c) => [`${c}|Séquence 1`, { statut: 'publie', le: isoMinute(ilYa(40, 15, 0)), par: 'Nadine Ekotto' }]),
-    ['5ème A|Séquence 2', { statut: 'genere', le: isoMinute(ilYa(1, 16, 20)), par: 'Paul Biyong' }],
-    ['4ème A|Séquence 2', { statut: 'publie', le: isoMinute(ilYa(2, 11, 5)), par: 'Nadine Ekotto' }],
-  ]);
+  // Bulletins trimestriels uniquement (décision 033) : le 1er trimestre de la 4ème A est déjà publié
+  const bulletins: Record<string, EtatBulletin> = {
+    '4ème A|1er trimestre': { statut: 'publie', le: isoMinute(ilYa(2, 11, 5)), par: 'Jean-Pierre Manga' },
+  };
 
   const anciens: AncienEleve[] = Array.from({ length: 14 }, (_, i) => {
     const f = i % 2 === 1;

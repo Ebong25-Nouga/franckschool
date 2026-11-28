@@ -63,3 +63,10 @@ Dernière mise à jour : 25/11/2026.
 | B27 | Connexion : chercher le numéro **dans l'école du lien uniquement** ; blocage temporaire après 5 essais ratés | Connexion de l'école | 022 |
 | B28 | Chaque requête du parent : filtre école + filtre « mes enfants » (table qui relie élèves et tuteurs) ; un élève non lié répond « Accès interdit » et la tentative est notée au journal | Tout l'espace parent | 022 |
 | B29 | Envoi WhatsApp : pour l'instant un lien WhatsApp avec message prérempli (pas d'API WhatsApp payante) | Remise de l'accès, partage du lien | 023 |
+
+## Bulletins trimestriels et modèle (décisions 033-034)
+
+- **B30 — Modèle de bulletin par école** : table `modeles_bulletin` (ou colonne JSON dans les paramètres de l'école) : titre, en-tête FR/EN, place du logo, colonnes affichées, regroupement, distinctions (libellé + moyenne minimale), titres des signatures, bas de page. Modifiable uniquement par l'administrateur ; chaque modification est journalisée.
+- **B31 — Figer le modèle à la publication** : à la publication des bulletins d'une classe pour un trimestre, enregistrer une copie du modèle (ou le PDF produit) pour que les bulletins publiés ne changent plus si le modèle est modifié ensuite.
+- **B32 — Génération des PDF côté serveur** : même mise en page que l'aperçu (`frontend/src/lib/bulletin.ts`), une ligne par matière de la classe, resserrage puis 2e page si la classe a beaucoup de matières. Le 3e trimestre ajoute le bilan de l'année (moyennes des trimestres, moyenne et rang annuels, décision).
+

@@ -3,7 +3,8 @@ import { Fragment, useState } from 'react';
 import { Chiffre, Titre } from '@/components/espace';
 import { Button, Grade, Modal, Pill, useToast } from '@/components/kit';
 import { appreciation, note } from '@/data/demo';
-import { entete, html, imprimer } from '@/lib/imprimer';
+import { documentBulletins, htmlBulletin, type DonneesBulletin } from '@/lib/bulletin';
+import { imprimerDocument } from '@/lib/imprimer';
 import { cn } from '@/lib/utils';
 import { dateFr, nomEleve, Note, useDroit } from './commun';
 import type { EleveS, Matiere, StatutReleve } from './donnees';
@@ -18,17 +19,11 @@ interface Periode {
   label: string;
   sequences: number[];
 }
+// Bulletins uniquement par trimestre (décision 033)
 const PERIODES: Periode[] = [
-  { label: 'Séquence 1', sequences: [1] },
-  { label: 'Séquence 2', sequences: [2] },
   { label: '1er trimestre', sequences: [1, 2] },
-  { label: 'Séquence 3', sequences: [3] },
-  { label: 'Séquence 4', sequences: [4] },
   { label: '2e trimestre', sequences: [3, 4] },
-  { label: 'Séquence 5', sequences: [5] },
-  { label: 'Séquence 6', sequences: [6] },
   { label: '3e trimestre', sequences: [5, 6] },
-  { label: 'Annuel', sequences: [1, 2, 3, 4, 5, 6] },
 ];
 
 const libStatut: Record<StatutReleve, string> = { non_commencee: 'Pas commencée', brouillon: 'En saisie', correction: 'Correction demandée', soumise: 'Soumise, à valider', validee: 'Validée' };
@@ -92,7 +87,7 @@ export function NotesBulletins({ direction = false }: { direction?: boolean }) {
   const [publier, setPublier] = useState<string | null>(null);
   const peut = useDroit();
   const toast = useToast();
-  const [periode, setPeriode] = useState(PERIODES[1]);
+  const [periode, setPeriode] = useState(PERIODES[0]);
   const [ouverte, setOuverte] = useState<string | null>(null);
   const { classes, classe } = useCalculs(periode);
   const infos = classes.map(classe);
@@ -111,24 +106,42 @@ export function NotesBulletins({ direction = false }: { direction?: boolean }) {
     toast(`${prof} est relancé(e) par notification.`);
   };
 
-  const bulletin = (c: ReturnType<typeof classe>, l: ReturnType<typeof classe>['classement'][number]) => `
-    <section style="page-break-after: always">
-      ${entete(`Bulletin de notes · ${periode.label}`)}
-      <table>
-        <tr><th>Élève</th><td class="gras">${html(nomEleve(l.e))}</td><th>Matricule</th><td>${html(l.e.matricule)}</td></tr>
-        <tr><th>Classe</th><td>${html(c.nom)} (${c.classement.length} élèves)</td><th>Né(e) le</th><td>${dateFr(l.e.dateNaissance)} à ${html(l.e.lieuNaissance)}</td></tr>
-      </table>
-      <table>
-        <tr><th>Matière</th><th>Enseignant</th><th class="droite-t">Coef.</th><th class="droite-t">Note /20</th><th class="droite-t">Note × coef.</th><th class="droite-t">Moy. classe</th><th>Appréciation</th></tr>
-        ${l.notes.map(({ m, n }) => `<tr><td>${html(m.nom)}</td><td>${html(m.prof)}</td><td class="droite-t">${m.coef}</td><td class="droite-t">${note(n)}</td><td class="droite-t">${note(n * m.coef)}</td><td class="droite-t">${note(c.moyMatiere(m))}</td><td>${appreciation(n)}</td></tr>`).join('')}
-        <tr><th colspan="2">Total</th><th class="droite-t">${l.coefs}</th><th></th><th class="droite-t">${note(l.notes.reduce((s, x) => s + x.n * x.m.coef, 0))}</th><th></th><th></th></tr>
-      </table>
-      <div class="encadre"><b>Moyenne : ${note(l.moyenne)} / 20</b> · Rang : ${l.rang}${l.rang === 1 ? 'er' : 'e'} sur ${c.classement.length} · Moyenne générale de la classe : ${note(c.moyGenerale ?? 0)} · Appréciation : ${appreciation(l.moyenne)}<br/>Absences : ${visibles(etat.absences).filter((a) => a.eleveId === l.e.id).length}</div>
-      <div class="signature"><div>Le professeur principal<div class="ligne"></div></div><div>Le Principal<div class="ligne"></div></div></div>
-    </section>`;
+  /** Données d'un élève pour le bulletin trimestriel ; la mise en page vient du « Modèle de bulletin ». */
+  const donnees = (c: ReturnType<typeof classe>, l: ReturnType<typeof classe>['classement'][number]): DonneesBulletin => {
+    const trimestre = (PERIODES.indexOf(periode) + 1) as 1 | 2 | 3;
+    const seqs = periode.sequences;
+    const notesDe = (m: Matiere) => c.classement.map((x) => x.notes.find((y) => y.m.id === m.id)?.n ?? 0);
+    const moyennes = c.classement.map((x) => x.moyenne);
+    const coefs = l.notes.reduce((s, x) => s + x.m.coef, 0) || 1;
+    const abs = visibles(etat.absences).filter((a) => a.eleveId === l.e.id);
+    const moyTrimestre = (e: EleveS, q: number[]) => l.notes.reduce((s, x) => s + notePeriode(e, x.m, q) * x.m.coef, 0) / coefs;
+    let annuel: DonneesBulletin['annuel'];
+    if (trimestre === 3) {
+      const annuelDe = (e: EleveS) => moyenne([[1, 2], [3, 4], [5, 6]].map((q) => moyTrimestre(e, q)));
+      const a = annuelDe(l.e);
+      annuel = { trimestres: [[1, 2], [3, 4], [5, 6]].map((q) => moyTrimestre(l.e, q)), moyenne: a, rang: 1 + c.classement.filter((x) => annuelDe(x.e) > a).length };
+    }
+    const pp = etat.classes.find((x) => x.nom === c.nom)?.pp ?? '—';
+    return {
+      trimestre,
+      annee: etat.anneesScolaires.find((a) => a.statut === 'active')?.annee ?? '',
+      numero: `BUL-T${trimestre}-${l.e.matricule}`,
+      date: dateFr(aujourdhui()),
+      eleve: { nom: nomEleve(l.e), matricule: l.e.matricule, naissance: `${dateFr(l.e.dateNaissance)} à ${l.e.lieuNaissance}`, sexe: l.e.sexe, classe: c.nom, effectif: c.classement.length, redoublant: l.e.statut === 'redoublant', pp },
+      lignes: l.notes.map(({ m, n }) => {
+        const toutes = notesDe(m);
+        return { matiere: m.nom, prof: m.prof, groupe: m.groupe, coef: m.coef, notes: seqs.map((q) => noteSeq(l.e, m, q)), moyenne: n, rang: 1 + toutes.filter((x) => x > n).length, moyClasse: c.moyMatiere(m), min: Math.min(...toutes), max: Math.max(...toutes) };
+      }),
+      resultats: { moyenne: l.moyenne, rang: l.rang, moyClasse: moyenne(moyennes), max: Math.max(...moyennes), min: Math.min(...moyennes), taux: (moyennes.filter((x) => x >= 10).length / moyennes.length) * 100, moySeq: seqs.map((q) => moyTrimestre(l.e, [q])) },
+      assiduite: { justifiees: abs.filter((a) => a.type === 'absence' && a.statut === 'justifiee').length, nonJustifiees: abs.filter((a) => a.type === 'absence' && a.statut !== 'justifiee').length, retards: abs.filter((a) => a.type === 'retard').length },
+      appreciation: l.moyenne >= 14 ? 'Bon trimestre. Continuez ainsi.' : l.moyenne >= 10 ? 'Trimestre satisfaisant ; des efforts restent à faire.' : 'Trimestre insuffisant ; le travail doit être intensifié.',
+      annuel,
+    };
+  };
+  const pagesBulletin = (c: ReturnType<typeof classe>, l: ReturnType<typeof classe>['classement'][number]) => htmlBulletin(etat.parametres.modeleBulletin, etat.parametres, donnees(c, l));
 
   const imprimerClasse = (c: ReturnType<typeof classe>) => {
-    imprimer(`Bulletins ${c.nom} ${periode.label}`, c.classement.map((l) => bulletin(c, l)).join(''));
+    imprimerDocument(documentBulletins(etat.parametres, c.classement.map((l) => pagesBulletin(c, l)).join(''), `Bulletins ${c.nom} ${periode.label}`));
     journaliser({ operation: 'Impression', module: 'Bulletins', element: `Bulletins ${c.nom}, ${periode.label}` });
   };
 
@@ -209,7 +222,7 @@ export function NotesBulletins({ direction = false }: { direction?: boolean }) {
                     {ouvert && (
                       <tr className="bg-brand-50/50">
                         <td colSpan={5} className="px-6 pb-5">
-                          <Detail c={c} periode={periode} peutRelancer={peut('notes')} onRelancer={(l) => relancer(c, l)} onBulletin={(l) => imprimer(`Bulletin ${l.e.matricule}`, bulletin(c, l))} />
+                          <Detail c={c} periode={periode} peutRelancer={peut('notes')} onRelancer={(l) => relancer(c, l)} onBulletin={(l) => imprimerDocument(documentBulletins(etat.parametres, pagesBulletin(c, l), `Bulletin ${l.e.matricule}`))} />
                         </td>
                       </tr>
                     )}

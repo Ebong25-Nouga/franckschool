@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileBadge2,
+  LayoutTemplate,
   FileText,
   GraduationCap,
   History,
@@ -43,12 +44,12 @@ export function useADecider() {
   const corrections = etat.releves.filter((r) => r.statut === 'correction').length;
   const remboursements = etat.remboursements.filter((r) => r.statut === 'en_attente');
   const ecarts = etat.clotures.filter((c) => c.ecart !== 0 && !c.vu);
-  // Classes entièrement validées dont les bulletins ne sont pas encore publiés (séquence 2)
+  // Classes dont le 1er trimestre (séquences 1 et 2) est entièrement validé et pas encore publié
   const classes = visibles(etat.classes).map((c) => c.nom);
   const aPublier = classes.filter((c) => {
     const mats = visibles(etat.matieres).filter((m) => m.classe === c);
-    const pret = mats.length > 0 && mats.every((m) => etat.releves.find((r) => r.classe === c && r.matiere === m.nom && r.sequence === 2)?.statut === 'validee');
-    return pret && etat.bulletins[`${c}|Séquence 2`]?.statut !== 'publie';
+    const pret = mats.length > 0 && mats.every((m) => etat.releves.find((r) => r.classe === c && r.matiere === m.nom && [1, 2].includes(r.sequence) && r.statut !== 'validee') === undefined && [1, 2].every((q) => etat.releves.some((r) => r.classe === c && r.matiere === m.nom && r.sequence === q)));
+    return pret && etat.bulletins[`${c}|1er trimestre`]?.statut !== 'publie';
   });
   const retires = [...etat.eleves, ...etat.parents, ...etat.enseignants, ...etat.classes, ...etat.matieres, ...etat.absences, ...etat.annonces].filter((x) => x.etat !== 'actif').length;
   return { notes, corrections, remboursements, ecarts, aPublier, retires };
@@ -89,6 +90,7 @@ function Direction() {
       liens: [
         { to: '/direction/notes', label: 'Notes et validation', icon: ClipboardCheck, badge: d.notes },
         { to: '/direction/resultats', label: 'Résultats et bulletins', icon: FileBadge2, badge: d.aPublier.length },
+        { to: '/direction/modele-bulletin', label: 'Modèle de bulletin', icon: LayoutTemplate },
       ],
     },
     {

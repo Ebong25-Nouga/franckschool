@@ -11,6 +11,7 @@ import EspaceParent from './pages/parent/EspaceParent';
 import { Accueil as AccueilParent, InformationsScolaires, MesEnfants, NotesBulletins, Notifications as NotificationsParent, PaiementsHistorique, ParametresCompte, Recus } from './pages/parent/PagesParent';
 import { Abonnements, Journal, ListeEtablissements, Statistiques, TableauPlateforme } from './pages/plateforme/Plateforme';
 import EspaceDirection from './pages/direction/EspaceDirection';
+import ModeleBulletin from './pages/direction/ModeleBulletin';
 import Historique from './pages/direction/Historique';
 import NotesValidation from './pages/direction/NotesValidation';
 import { AnneesScolaires, MonProfil, NotificationsDirection, Parametres as ParametresDirection } from './pages/direction/PagesDirection';
@@ -100,6 +101,7 @@ export default function App() {
               <Route path="/direction/parents" element={<Parents />} />
               <Route path="/direction/notes" element={<NotesValidation />} />
               <Route path="/direction/resultats" element={<NotesBulletinsSecretariat direction />} />
+              <Route path="/direction/modele-bulletin" element={<ModeleBulletin />} />
               <Route path="/direction/caisse" element={<CaisseSecretariat />} />
               <Route path="/direction/annees-scolaires" element={<AnneesScolaires />} />
               <Route path="/direction/notifications" element={<NotificationsDirection />} />

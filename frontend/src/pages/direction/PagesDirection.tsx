@@ -221,27 +221,10 @@ export function Parametres() {
       )}
 
       {onglet === 'bulletins' && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Bloc titre="Signature des bulletins">
-            <Grille>
-              <Champ label="Nom du signataire"><Saisie {...champ('signataire')} /></Champ>
-              <Champ label="Titre"><Saisie {...champ('titreSignataire')} placeholder="Le Principal" /></Champ>
-            </Grille>
-            <p className="mt-3 text-[13px] text-encre-doux">Le professeur principal de chaque classe est repris automatiquement depuis « Classes ».</p>
-          </Bloc>
-          <Bloc titre="Mentions selon la moyenne">
-            <ul className="space-y-2">
-              {p.mentions.map((m, i) => (
-                <li key={i} className="flex items-center gap-3">
-                  <span className="w-28 text-sm text-encre-doux">À partir de</span>
-                  <Saisie type="number" min={0} max={20} step={0.5} value={m.min} onChange={(e) => setP({ ...p, mentions: p.mentions.map((x, j) => (j === i ? { ...x, min: Number(e.target.value) } : x)) })} className="w-24" aria-label={`Seuil de la mention ${m.libelle}`} />
-                  <Saisie value={m.libelle} onChange={(e) => setP({ ...p, mentions: p.mentions.map((x, j) => (j === i ? { ...x, libelle: e.target.value } : x)) })} aria-label="Mention" />
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-[13px] text-encre-doux">Utilisées par le calcul automatique des bulletins.</p>
-          </Bloc>
-        </div>
+        <Bloc titre="Bulletins">
+          <p className="max-w-2xl text-[15px] text-encre-doux">L’en-tête, le logo, les colonnes, les mentions, les distinctions et les signatures du bulletin se règlent dans la page <b className="text-encre">Modèle de bulletin</b>, avec un aperçu en direct.</p>
+          <Link to="/direction/modele-bulletin" className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-[10px] bg-brand-700 px-4 text-sm font-semibold text-white hover:bg-brand-800">Ouvrir le modèle de bulletin</Link>
+        </Bloc>
       )}
 
       {onglet === 'scolaires' && (

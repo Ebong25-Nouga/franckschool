@@ -43,6 +43,12 @@ const STYLE = `
 `;
 
 export function imprimer(titre: string, corps: string) {
+  imprimerDocument(`<!doctype html><html lang="fr"><head><meta charset="utf-8"/><title>${html(titre)}</title><style>${STYLE}</style></head><body>${corps}
+    <p class="pied">Document édité le ${new Date().toLocaleString('fr-FR')} par Franck School · ${html(ecole.nom)}</p></body></html>`);
+}
+
+/** Imprime un document HTML complet (par exemple les bulletins, qui ont leur propre mise en page). */
+export function imprimerDocument(document_: string) {
   const cadre = document.createElement('iframe');
   cadre.setAttribute('aria-hidden', 'true');
   cadre.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
@@ -50,8 +56,7 @@ export function imprimer(titre: string, corps: string) {
   const doc = cadre.contentDocument;
   if (!doc) return;
   doc.open();
-  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"/><title>${html(titre)}</title><style>${STYLE}</style></head><body>${corps}
-    <p class="pied">Document édité le ${new Date().toLocaleString('fr-FR')} par Franck School · ${html(ecole.nom)}</p></body></html>`);
+  doc.write(document_);
   doc.close();
   setTimeout(() => {
     try {
