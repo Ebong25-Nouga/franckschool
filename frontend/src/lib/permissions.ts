@@ -44,7 +44,7 @@ export const DROITS_SECRETAIRE: GroupeDroits[] = [
     titre: 'Évaluations',
     droits: [
       { code: 'notes', libelle: 'Suivi des notes', detail: 'Voir l’avancement des notes et relancer les enseignants (la validation reste à l’administrateur)' },
-      { code: 'bulletins', libelle: 'Bulletins', detail: 'Générer, imprimer et publier les bulletins aux parents' },
+      { code: 'bulletins', libelle: 'Bulletins', detail: 'Consulter et imprimer les bulletins (générés automatiquement ; la publication est faite par l’administrateur)' },
     ],
   },
   {
@@ -81,6 +81,7 @@ export const DROITS_ADMIN_SEULEMENT = [
   'Attribuer ou retirer des droits',
   'Valider les notes',
   'Approuver ou refuser un remboursement',
+  'Publier les bulletins aux parents',
   'Voir le journal complet de l’établissement',
   'Voir et restaurer les éléments masqués ou supprimés',
   'Créer et clôturer une année scolaire',

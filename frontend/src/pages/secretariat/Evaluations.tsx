@@ -1,7 +1,7 @@
-import { BellRing, CheckCircle2, ChevronDown, ChevronRight, FileBadge2, Printer, Send } from 'lucide-react';
+import { BellRing, ChevronDown, ChevronRight, FileBadge2, Printer, Send } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import { Chiffre, Titre } from '@/components/espace';
-import { Button, Grade, Modal, Pill, useToast } from '@/components/kit';
+import { Button, Grade, Pill, useToast } from '@/components/kit';
 import { appreciation, note } from '@/data/demo';
 import { entete, html, imprimer } from '@/lib/imprimer';
 import { cn } from '@/lib/utils';
@@ -68,7 +68,9 @@ function useCalculs(periode: Periode) {
     const comptees = lignes.filter((l) => l.statut === 'validee' || l.statut === 'soumise').map((l) => l.m);
     const coefs = comptees.reduce((s, m) => s + m.coef, 0);
     const moyGenerale = coefs ? comptees.reduce((s, m) => s + moyMatiere(m) * m.coef, 0) / coefs : null;
-    const bulletin = etat.bulletins[`${nom}|${periode.label}`];
+    // Génération automatique dès que tout est validé ; la publication est faite par la direction
+    const stocke = etat.bulletins[`${nom}|${periode.label}`];
+    const bulletin = stocke?.statut === 'publie' ? stocke : pret ? { statut: 'genere' as const, le: '', par: 'Franck School' } : undefined;
     const enAttente = lignes.filter((l) => l.statut !== 'validee').length;
     // Classement des élèves (toutes matières)
     const coefsTout = mats.reduce((s, m) => s + m.coef, 0);
@@ -85,18 +87,16 @@ function useCalculs(periode: Periode) {
 }
 
 export function NotesBulletins() {
-  const { etat, modifier, journaliser, etatBulletins } = useSecretariat();
+  const { etat, modifier, journaliser } = useSecretariat();
   const peut = useDroit();
   const toast = useToast();
   const [periode, setPeriode] = useState(PERIODES[1]);
   const [ouverte, setOuverte] = useState<string | null>(null);
-  const [publier, setPublier] = useState<string | null>(null);
   const { classes, classe } = useCalculs(periode);
   const infos = classes.map(classe);
   const futur = periode.sequences.every((q) => q > 2);
 
   const compteurs = {
-    prets: infos.filter((c) => c.pret && !c.bulletin).length,
     attente: infos.filter((c) => !c.pret).length,
     generes: infos.filter((c) => c.bulletin?.statut === 'genere').length,
     publies: infos.filter((c) => c.bulletin?.statut === 'publie').length,
@@ -132,7 +132,7 @@ export function NotesBulletins() {
 
   return (
     <>
-      <Titre titre="Notes et bulletins" texte="Suivez la saisie des notes de chaque classe, relancez les enseignants en retard, puis générez et publiez les bulletins dès que la classe est prête." />
+      <Titre titre="Notes et bulletins" texte="Suivez la saisie des notes de chaque classe et relancez les enseignants en retard. Les bulletins se génèrent tout seuls dès que la classe est entièrement validée." />
 
       <div role="tablist" aria-label="Période" className="mb-5 inline-flex max-w-full flex-wrap gap-0.5 rounded-[11px] bg-papier-2 p-1">
         {PERIODES.map((p) => (
@@ -142,10 +142,9 @@ export function NotesBulletins() {
         ))}
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <Chiffre label="Classes prêtes" valeur={String(compteurs.prets)} icone={CheckCircle2} ton="valide" />
-        <Chiffre label="En attente de notes" valeur={String(compteurs.attente)} icone={BellRing} ton="feutre" />
-        <Chiffre label="Bulletins générés" valeur={String(compteurs.generes)} icone={FileBadge2} />
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Chiffre label="Classes en attente de notes" valeur={String(compteurs.attente)} icone={BellRing} ton="feutre" />
+        <Chiffre label="Bulletins générés, à publier par la direction" valeur={String(compteurs.generes)} icone={FileBadge2} />
         <Chiffre label="Publiés aux parents" valeur={String(compteurs.publies)} icone={Send} ton="valide" />
       </div>
 
@@ -188,20 +187,14 @@ export function NotesBulletins() {
                       </td>
                       <td className="px-5 py-3.5">
                         {c.bulletin ? (
-                          <Pill tone={c.bulletin.statut === 'publie' ? 'valide' : 'encre'}>{c.bulletin.statut === 'publie' ? 'Publiés aux parents' : 'Générés'}</Pill>
-                        ) : c.pret ? (
-                          <Pill tone="valide">Prête</Pill>
+                          <Pill tone={c.bulletin.statut === 'publie' ? 'valide' : 'encre'}>{c.bulletin.statut === 'publie' ? 'Publiés aux parents' : 'Générés · à publier par la direction'}</Pill>
                         ) : (
                           <Pill tone="feutre">{c.enAttente} matière{c.enAttente > 1 ? 's' : ''} en attente</Pill>
                         )}
                       </td>
                       <td className="px-5 py-3.5 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
-                          {c.pret && !c.bulletin && peut('bulletins') && (
-                            <Button size="sm" icon={FileBadge2} onClick={() => { etatBulletins(c.nom, periode.label, 'genere'); toast(`Bulletins de la ${c.nom} générés (${c.classement.length} élèves).`); setOuverte(c.nom); }}>Générer les bulletins</Button>
-                          )}
                           {c.bulletin && peut('bulletins') && <Button size="sm" variant="secondary" icon={Printer} onClick={() => imprimerClasse(c)}>Imprimer</Button>}
-                          {c.bulletin?.statut === 'genere' && peut('bulletins') && <Button size="sm" icon={Send} onClick={() => setPublier(c.nom)}>Publier aux parents</Button>}
                           {!c.pret && <Button size="sm" variant="secondary" onClick={() => setOuverte(ouvert ? null : c.nom)}>{ouvert ? 'Masquer le détail' : 'Voir le détail'}</Button>}
                         </div>
                       </td>
@@ -220,13 +213,8 @@ export function NotesBulletins() {
           </table>
         </div>
       </section>
-      <p className="mt-4 text-[13px] text-encre-doux">La validation des notes est faite par l’administrateur. Une classe est prête quand toutes ses matières sont validées pour la période.</p>
+      <p className="mt-4 text-[13px] text-encre-doux">Les bulletins sont calculés et générés automatiquement par Franck School dès que l’administrateur a validé toutes les notes de la classe pour la période. La publication aux parents est faite par la direction.</p>
 
-      {publier && (
-        <Modal title={`Publier les bulletins de la ${publier}`} lead={`${periode.label}. Les parents les verront dans leur espace, rubrique « Notes et bulletins ».`} onClose={() => setPublier(null)} footer={<><Button variant="secondary" onClick={() => setPublier(null)}>Annuler</Button><Button icon={Send} onClick={() => { etatBulletins(publier, periode.label, 'publie'); toast(`Bulletins de la ${publier} publiés aux parents.`); setPublier(null); }}>Publier</Button></>}>
-          <Note ton="feutre">Une fois publiés, les bulletins ne se modifient plus. Une correction passera par l’administrateur, qui pourra publier une nouvelle version.</Note>
-        </Modal>
-      )}
     </>
   );
 }
