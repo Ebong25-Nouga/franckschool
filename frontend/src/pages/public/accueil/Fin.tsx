@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { versSection } from '@/lib/defiler';
+import logoFranck from '@/assets/logo-franck.svg';
 
 /* =========================================================
  * « Prêt pour la rentrée » : une page de cahier.
@@ -117,7 +118,7 @@ export function PiedDePage({ onDemo }: { onDemo: () => void }) {
         <div className="grid gap-14 lg:grid-cols-[1.3fr_2fr]">
           <div className="max-w-sm">
             <Link to="/" className="flex items-center gap-3 text-white" aria-label="Franck School, accueil">
-              <img src="/logo.svg" alt="" className="size-11 rounded-xl shadow-[0_0_0_1px_rgb(255_255_255/0.15)]" />
+              <img src={logoFranck} alt="" className="size-11 rounded-xl shadow-[0_0_0_1px_rgb(255_255_255/0.15)]" />
               <span className="font-display text-[22px] font-extrabold tracking-[-0.02em]">Franck School</span>
             </Link>
             <p className="mt-5 text-[15px] leading-relaxed text-brand-200">

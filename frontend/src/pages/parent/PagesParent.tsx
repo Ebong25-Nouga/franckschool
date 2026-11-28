@@ -28,6 +28,7 @@ import { ecole, fcfa, note } from '@/data/demo';
 import { bulletins, calendrier, echeancier, emploiParClasse, enfants, moyenne, notesParEnfant, notificationsParent, paiements, parent, rangs, type Paiement, type TypeNotif } from '@/data/parent';
 import { useEnfant } from './EspaceParent';
 import { PaiementEnLigne } from './PaiementEnLigne';
+import logoFranck from '@/assets/logo-franck.svg';
 
 /* ---------------------------------------------------------------
  * Éléments communs
@@ -298,7 +299,7 @@ export function InformationsScolaires() {
       {vue === 'ecole' && (
         <section className="seyes relative overflow-hidden rounded-[24px] bg-brand-950 p-7 text-white">
           <div className="flex items-center gap-4">
-            <img src="/logo.svg" alt="" className="size-14 rounded-2xl" />
+            <img src={logoFranck} alt="" className="size-14 rounded-2xl" />
             <div>
               <h2 className="font-display text-[26px] font-bold leading-tight tracking-[-0.02em]">{ecole.nom}</h2>
               <p className="text-brand-200">{ecole.devise}</p>
@@ -558,7 +559,7 @@ export function Recus() {
                 <p className="font-display font-bold">{ecole.nom}</p>
                 <p className="text-xs text-encre-doux">{ecole.ville} · {ecole.telephone}</p>
               </div>
-              <img src="/logo.svg" alt="" className="size-9" />
+              <img src={logoFranck} alt="" className="size-9" />
             </div>
             <dl className="mt-3 divide-y divide-papier-ligne/70 text-sm">
               {[

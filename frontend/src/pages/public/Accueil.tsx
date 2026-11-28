@@ -37,6 +37,7 @@ import { ApercuDirection, ApercuEnseignant, ApercuParent, ApercuSecretariat, Fen
 import { PiedDePage, PretRentree } from './accueil/Fin';
 import { Tarifs } from './accueil/Tarifs';
 import { VideoPresentation } from './accueil/VideoPresentation';
+import logoFranck from '@/assets/logo-franck.svg';
 
 /* ---------------------------------------------------------------
  * Contenu (tiré du cahier des charges, document maître V1)
@@ -134,7 +135,7 @@ export default function Accueil() {
       <header className={cn('fixed inset-x-0 top-0 z-40 transition-[background-color,box-shadow] duration-300', defile ? 'bg-brand-950/90 shadow-[0_1px_0_rgb(255_255_255/0.08)] backdrop-blur-md' : 'bg-transparent')}>
         <nav aria-label="Navigation principale" className="mx-auto flex h-[72px] max-w-[1200px] items-center gap-8 px-5 sm:px-8">
           <Link to="/" className="flex items-center gap-2.5 text-white" aria-label="Franck School, accueil">
-            <img src="/logo.svg" alt="" className="size-9 rounded-[10px] shadow-[0_0_0_1px_rgb(255_255_255/0.15)]" />
+            <img src={logoFranck} alt="" className="size-9 rounded-[10px] shadow-[0_0_0_1px_rgb(255_255_255/0.15)]" />
             <span className="font-display text-[19px] font-extrabold tracking-[-0.02em]">Franck School</span>
           </Link>
           <ul className="hidden items-center gap-0.5 xl:flex">

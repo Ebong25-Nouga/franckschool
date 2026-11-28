@@ -3,6 +3,7 @@ import { Check, KeyRound, ShieldCheck, Upload, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar, Button, Modal, PageHeader, Panel, PanelHead, Pill, SequenceRail, useToast } from '../../components/kit';
 import { ecole } from '../../data/demo';
+import logoFranck from '@/assets/logo-franck.svg';
 
 /* =========================================================
  * Utilisateurs et droits
@@ -146,7 +147,7 @@ export function Parametres() {
           <PanelHead title="Identité de l’établissement" />
           <div className="grid gap-4 px-6 pb-6 sm:grid-cols-[96px_1fr]">
             <div>
-              <div className="grid size-24 place-items-center rounded-2xl bg-papier ring-1 ring-papier-ligne"><img src="/logo.svg" alt="Logo actuel" className="size-14" /></div>
+              <div className="grid size-24 place-items-center rounded-2xl bg-papier ring-1 ring-papier-ligne"><img src={logoFranck} alt="Logo actuel" className="size-14" /></div>
               <Button size="sm" variant="ghost" icon={Upload} className="mt-2 w-full">Changer</Button>
             </div>
             <div className="grid gap-4">

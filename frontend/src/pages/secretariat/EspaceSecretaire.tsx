@@ -38,6 +38,7 @@ import { libelleDroit } from '@/lib/permissions';
 import { appliquerTeinte } from '@/lib/teintes';
 import { chemin, nomEleve, useDroit } from './commun';
 import { aujourdhui, SecretariatProvider, useSecretariat, visibles } from './store';
+import logoFranck from '@/assets/logo-franck.svg';
 
 export interface Lien {
   to: string;
@@ -257,7 +258,7 @@ export function CadreEspace({ config }: { config: ConfigEspace }) {
       {/* Barre latérale (ordinateur) */}
       <aside className="seyes fixed inset-y-0 left-0 z-30 hidden w-[288px] flex-col bg-brand-950 lg:flex">
         <div className="flex items-center gap-3 px-6 pb-5 pt-7">
-          <img src="/logo.svg" alt="" className="size-12 rounded-2xl shadow-[0_0_0_1px_rgb(255_255_255/0.12)]" />
+          <img src={logoFranck} alt="" className="size-12 rounded-2xl shadow-[0_0_0_1px_rgb(255_255_255/0.12)]" />
           <div className="leading-tight">
             <p className="font-display text-[19px] font-extrabold text-white">Franck School</p>
             <p className="text-[13px] text-brand-300">{config.libelle}</p>
@@ -291,7 +292,7 @@ export function CadreEspace({ config }: { config: ConfigEspace }) {
             <Menu className="size-6" />
           </button>
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <img src="/logo.svg" alt="" className="size-9 rounded-xl" />
+            <img src={logoFranck} alt="" className="size-9 rounded-xl" />
             <span className="min-w-0 leading-tight">
               <span className="block truncate font-display text-[17px] font-extrabold tracking-[-0.01em]">Franck School</span>
               <span className="block text-xs text-encre-doux">{config.court}</span>
@@ -308,7 +309,7 @@ export function CadreEspace({ config }: { config: ConfigEspace }) {
           <button className="absolute inset-0 cursor-default bg-encre/45" aria-label="Fermer le menu" tabIndex={-1} onClick={() => setMenu(false)} />
           <div className="absolute inset-y-0 left-0 flex w-[330px] max-w-[88vw] animate-entree flex-col bg-white shadow-leve">
             <div className="flex items-center gap-3 border-b border-papier-ligne px-5 py-4">
-              <img src="/logo.svg" alt="" className="size-10 rounded-xl" />
+              <img src={logoFranck} alt="" className="size-10 rounded-xl" />
               <span className="flex-1 font-display text-lg font-extrabold">Franck School</span>
               <button onClick={() => setMenu(false)} className="grid size-10 cursor-pointer place-items-center rounded-lg text-encre-doux hover:bg-papier" aria-label="Fermer le menu">
                 <X className="size-5" />

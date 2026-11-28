@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SequenceRail } from '@/components/kit';
+import logoFranck from '@/assets/logo-franck.svg';
 
 /*
  * Mise en page commune aux écrans d'authentification (interface 1) :
@@ -23,7 +24,7 @@ export function CadreAuth({
       <aside className="seyes relative hidden flex-col justify-between overflow-hidden bg-brand-950 p-12 text-white lg:flex">
         <div aria-hidden className="absolute -right-40 -top-32 size-[560px] rounded-full bg-brand-700/45 blur-[110px]" />
         <Link to="/" className="relative flex items-center gap-4" aria-label="Franck School, retour à l’accueil">
-          <img src="/logo.svg" alt="" className="size-16 rounded-2xl shadow-[0_0_0_1px_rgb(255_255_255/0.15),0_12px_30px_-10px_rgb(0_0_0/0.5)]" />
+          <img src={logoFranck} alt="" className="size-16 rounded-2xl shadow-[0_0_0_1px_rgb(255_255_255/0.15),0_12px_30px_-10px_rgb(0_0_0/0.5)]" />
           <span className="font-display text-[28px] font-extrabold tracking-[-0.02em]">Franck School</span>
         </Link>
         <div className="relative max-w-md">
@@ -42,7 +43,7 @@ export function CadreAuth({
             <ArrowLeft className="size-4" aria-hidden /> {retour.label}
           </Link>
           <Link to="/" className="mb-8 flex items-center gap-3 lg:hidden" aria-label="Franck School, accueil">
-            <img src="/logo.svg" alt="" className="size-14 rounded-2xl" />
+            <img src={logoFranck} alt="" className="size-14 rounded-2xl" />
             <span className="font-display text-2xl font-extrabold tracking-[-0.02em]">Franck School</span>
           </Link>
           {children}

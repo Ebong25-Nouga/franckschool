@@ -1,5 +1,6 @@
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { anim, BLEU, BLEU_CLAIR, Carte, DISPLAY, DOUX, Etape, fcfa, Fond, FEUTRE, LIGNE, PAPIER, Saisie, STYLO, TEXTE, VALIDE } from './commun';
+import logoFranck from '@/assets/logo-franck.svg';
 
 /* =========================================================
  * Scène 1 : inscrire un élève (6 s)
@@ -116,7 +117,7 @@ export function SceneBulletin() {
             <p style={{ fontSize: 15, letterSpacing: '0.16em', fontWeight: 700, color: DOUX, margin: 0 }}>RÉPUBLIQUE DU CAMEROUN</p>
             <p style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 30, margin: '6px 0 0' }}>Bulletin de notes, 1er trimestre</p>
           </div>
-          <img src="/logo.svg" alt="" style={{ width: 56, height: 56 }} />
+          <img src={logoFranck} alt="" style={{ width: 56, height: 56 }} />
         </div>
         <p style={{ fontSize: 22, margin: '18px 0 8px' }}><b>MBARGA</b> Marie-Claire · 4ème A · 44 élèves</p>
         {lignes.map(([m, c, n], i) => (
@@ -186,7 +187,7 @@ export function SceneFin() {
   return (
     <Fond>
       <AbsoluteFill style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-        <img src="/logo.svg" alt="" style={{ width: 150, height: 150, borderRadius: 40, opacity: anim(f, 0, 14), scale: `${anim(f, 0, 20, 0.8, 1)}` }} />
+        <img src={logoFranck} alt="" style={{ width: 150, height: 150, borderRadius: 40, opacity: anim(f, 0, 14), scale: `${anim(f, 0, 20, 0.8, 1)}` }} />
         <p style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 110, margin: '40px 0 0', letterSpacing: '-0.045em', opacity: anim(f, 8, 22), translate: `0px ${anim(f, 8, 26, 30, 0)}px` }}>Franck School</p>
         <p style={{ fontSize: 34, color: '#C2CFFC', margin: '14px 0 0', opacity: anim(f, 18, 32) }}>
           Toute votre école, de l’inscription au bulletin.

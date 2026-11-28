@@ -3,6 +3,7 @@ import { Check, Download, Eye, FileBadge2, Lock, RotateCcw, Sparkles } from 'luc
 import { useState } from 'react';
 import { Avatar, Button, Grade, Modal, PageHeader, Panel, Pill, Segmented, SequenceRail, Select, Table, Td, useToast } from '../../components/kit';
 import { absences as donneesAbsences, appreciation, classes, ecole, eleves, evaluationsAValider, matieresClasse, note } from '../../data/demo';
+import logoFranck from '@/assets/logo-franck.svg';
 
 /* =========================================================
  * Validation des notes
@@ -130,7 +131,7 @@ export function Bulletins() {
           <article className="overflow-hidden rounded-[18px] bg-white text-[12px] shadow-leve" aria-label={`Bulletin de ${apercu.nom} ${apercu.prenom}`}>
             <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b-2 border-encre px-6 pb-3 pt-5 text-center">
               <div className="text-left text-[10px] leading-tight text-encre-doux">République du Cameroun<br />Paix, Travail, Patrie<br />Ministère des Enseignements Secondaires</div>
-              <img src="/logo.svg" alt="" className="size-10" />
+              <img src={logoFranck} alt="" className="size-10" />
               <div className="text-right text-[10px] leading-tight text-encre-doux">Republic of Cameroon<br />Peace, Work, Fatherland<br />{ecole.ville}</div>
             </header>
             <div className="px-6 py-4">

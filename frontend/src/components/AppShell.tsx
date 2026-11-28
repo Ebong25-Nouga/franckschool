@@ -32,6 +32,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { peut, useAuth, type Session } from '../auth';
 import { ecole, notifications } from '../data/demo';
 import { Avatar } from './kit';
+import logoFranck from '@/assets/logo-franck.svg';
 
 interface Item {
   to: string;
@@ -129,7 +130,7 @@ function Sidebar({ s, onNavigate }: { s: Session; onNavigate?: () => void }) {
     <div className="seyes relative flex h-full flex-col bg-brand-950 text-brand-100">
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(120%_80%_at_0%_0%,rgb(var(--brand-700)/0.55),transparent_70%)]" />
       <div className="relative flex items-center gap-3 px-5 pb-5 pt-6">
-        <img src="/logo.svg" alt="" className="size-10 rounded-xl shadow-[0_0_0_1px_rgb(255_255_255/0.12)]" />
+        <img src={logoFranck} alt="" className="size-10 rounded-xl shadow-[0_0_0_1px_rgb(255_255_255/0.12)]" />
         <div className="min-w-0 leading-tight">
           <p className="font-display text-[17px] font-extrabold tracking-[-0.01em] text-white">Franck School</p>
           <p className="truncate text-xs font-medium text-brand-300">{libelleEspace[s.espace]}</p>

@@ -5,6 +5,7 @@
  */
 import { cn } from '@/lib/utils';
 import { ArrowDownLeft, Banknote, Check, ClipboardCheck, Lock, Smartphone, Undo2 } from 'lucide-react';
+import logoFranck from '@/assets/logo-franck.svg';
 
 export function FenetreApp({ children, titre, className }: { children: React.ReactNode; titre: string; className?: string }) {
   return (
@@ -30,7 +31,7 @@ export function MiniTableau() {
     <div className="grid text-[11px] text-encre sm:grid-cols-[132px_1fr]">
       <div className="seyes hidden flex-col gap-1 bg-brand-950 p-3 text-brand-100 sm:flex">
         <div className="mb-2 flex items-center gap-1.5">
-          <img src="/logo.svg" alt="" className="size-5 rounded" />
+          <img src={logoFranck} alt="" className="size-5 rounded" />
           <span className="font-display text-[11px] font-bold text-white">Franck School</span>
         </div>
         {['Tableau de bord', 'Élèves', 'Notes', 'Bulletins', 'Caisse', 'Remboursements'].map((m, i) => (
@@ -87,7 +88,7 @@ export function MiniBulletin({ className }: { className?: string }) {
           <p className="text-[8px] font-semibold uppercase tracking-[0.14em] text-encre-doux">République du Cameroun</p>
           <p className="font-display text-[12px] font-bold">Bulletin, 1er trimestre</p>
         </div>
-        <img src="/logo.svg" alt="" className="size-6" />
+        <img src={logoFranck} alt="" className="size-6" />
       </div>
       <p className="mt-2 text-[10px]"><b>MBARGA</b> Marie-Claire · 4ème A</p>
       <table className="mt-1.5 w-full text-[10px]">
