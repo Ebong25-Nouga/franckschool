@@ -218,7 +218,7 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
   const nomProf = enseignant ? `${enseignant.civilite} ${enseignant.nom} ${enseignant.prenom}` : prof;
   const creneaux = vue === 'classe' ? etat.creneaux.filter((c) => c.classe === classe) : etat.creneaux.filter((c) => duProf(c, prof));
   const cellule = (jour: string, plage: string) => creneaux.find((c) => c.jour === jour && c.plage === plage);
-  const modifiable = !lectureSeule && vue === 'classe';
+  const modifiable = !lectureSeule;
   const titreGrille = vue === 'classe' ? `Emploi du temps de la ${classe}` : `Emploi du temps de ${nomProf}`;
   const ligne1 = (c: Creneau) => (vue === 'classe' ? c.matiere : c.classe);
   const ligne2 = (c: Creneau) => (vue === 'classe' ? c.prof : c.matiere);
@@ -254,7 +254,7 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
     <>
       <Titre
         titre="Emplois du temps"
-        texte={lectureSeule ? 'Consultez l’emploi du temps de chaque classe et de chaque enseignant. Ils sont créés par les secrétaires qui ont l’accès.' : 'Construisez l’emploi du temps de chaque classe. Celui de chaque enseignant se remplit tout seul. Les conflits d’enseignant et de salle sont détectés automatiquement.'}
+        texte={lectureSeule ? 'Consultez l’emploi du temps de chaque classe et de chaque enseignant. Ils sont créés par les secrétaires qui ont l’accès.' : 'Créez les emplois du temps, par classe ou par enseignant : un cours ajouté d’un côté apparaît aussitôt de l’autre. Les conflits de classe, d’enseignant et de salle sont bloqués.'}
       />
       {lectureSeule && (
         <div className="mb-5">
@@ -318,13 +318,14 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
       </section>
       {creneaux.length === 0 && (
         <div className="mt-4">
-          <Note>{vue === 'classe' ? `La ${classe} n’a pas encore d’emploi du temps.${modifiable ? ' Cliquez sur une case pour ajouter un cours.' : ''}` : `${nomProf} n’a encore aucun cours dans les emplois du temps des classes.`}</Note>
+          <Note>{vue === 'classe' ? `La ${classe} n’a pas encore d’emploi du temps.` : `${nomProf} n’a encore aucun cours.`}{modifiable ? ' Cliquez sur une case « + » pour ajouter un cours.' : ''}</Note>
         </div>
       )}
-      {!lectureSeule && vue === 'prof' && creneaux.length > 0 && <p className="mt-3 text-[13px] text-encre-doux">Cette vue se remplit toute seule à partir des emplois du temps des classes. Pour changer un cours, passez par « Par classe ».</p>}
+      {!lectureSeule && <p className="mt-3 text-[13px] text-encre-doux">{vue === 'classe' ? 'Cliquez sur une case « + » pour ajouter un cours, ou sur la corbeille d’un cours pour le retirer.' : 'Cliquez sur une case « + » pour donner un cours à cet enseignant dans l’une de ses classes. Le cours apparaît aussi dans l’emploi du temps de la classe.'}</p>}
       {ajout && (
         <AjoutCreneau
-          classe={classe}
+          classe={vue === 'classe' ? classe : undefined}
+          prof={vue === 'prof' ? prof : undefined}
           {...ajout}
           onClose={() => setAjout(null)}
           onAjout={(c) => {
@@ -337,23 +338,38 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
   );
 }
 
-function AjoutCreneau({ classe, jour, plage, onClose, onAjout }: { classe: string; jour: Creneau['jour']; plage: Creneau['plage']; onClose: () => void; onAjout: (c: Omit<Creneau, 'id'>) => void }) {
+/** Ajout d'un cours, depuis la grille d'une classe (classe connue) ou d'un enseignant (enseignant connu). */
+function AjoutCreneau({ classe: classeFixe, prof: profFixe, jour, plage, onClose, onAjout }: { classe?: string; prof?: string; jour: Creneau['jour']; plage: Creneau['plage']; onClose: () => void; onAjout: (c: Omit<Creneau, 'id'>) => void }) {
   const { etat } = useSecretariat();
-  const matieres = visibles(etat.matieres).filter((m) => m.classe === classe);
+  const toutes = visibles(etat.matieres);
+  const duProfM = (m: { prof: string }) => !profFixe || m.prof === profFixe || m.prof.startsWith(`${profFixe} `);
+  // Depuis un enseignant : seulement les classes où il enseigne
+  const classesPossibles = classeFixe ? [classeFixe] : [...new Set(toutes.filter(duProfM).map((m) => m.classe))];
+  const [classe, setClasse] = useState(classesPossibles[0] ?? '');
+  const matieres = toutes.filter((m) => m.classe === classe && duProfM(m));
   const [matiere, setMatiere] = useState(matieres[0]?.nom ?? '');
-  const m = matieres.find((x) => x.nom === matiere);
-  const [salle, setSalle] = useState(visibles(etat.classes).find((c) => c.nom === classe)?.salle ?? '');
+  const m = matieres.find((x) => x.nom === matiere) ?? matieres[0];
+  const salleDe = (c: string) => visibles(etat.classes).find((x) => x.nom === c)?.salle ?? '';
+  const [salle, setSalle] = useState(salleDe(classe));
   const prof = m?.prof ?? '';
+  const conflitClasse = etat.creneaux.find((c) => c.classe === classe && c.jour === jour && c.plage === plage);
   const conflitProf = prof && etat.creneaux.find((c) => c.jour === jour && c.plage === plage && c.prof === prof);
   const conflitSalle = salle && etat.creneaux.find((c) => c.jour === jour && c.plage === plage && c.salle === salle && c.classe !== classe);
-  const ok = m && prof && !conflitProf && !conflitSalle;
+  const ok = m && prof && !conflitClasse && !conflitProf && !conflitSalle;
+  const changerClasse = (c: string) => {
+    setClasse(c);
+    setMatiere(toutes.find((x) => x.classe === c && duProfM(x))?.nom ?? '');
+    setSalle(salleDe(c));
+  };
   return (
-    <Modal title="Ajouter un cours" lead={`${classe} · ${jour}, ${plage}`} onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button disabled={!ok} onClick={() => (onAjout({ classe, jour, plage, matiere, prof, salle: salle.trim() || '—' }), onClose())}>Ajouter</Button></>}>
-      {matieres.length === 0 ? <Note ton="feutre">Cette classe n’a pas de matière. Ajoutez d’abord ses matières.</Note> : (
+    <Modal title="Ajouter un cours" lead={`${classeFixe ?? profFixe} · ${jour}, ${plage}`} onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button disabled={!ok} onClick={() => m && (onAjout({ classe, jour, plage, matiere: m.nom, prof, salle: salle.trim() || '—' }), onClose())}>Ajouter</Button></>}>
+      {classesPossibles.length === 0 ? <Note ton="feutre">Cet enseignant n’a aucune matière attribuée. Attribuez-lui d’abord une matière dans « Matières ».</Note> : matieres.length === 0 && classeFixe ? <Note ton="feutre">Cette classe n’a pas de matière. Ajoutez d’abord ses matières.</Note> : (
         <div className="space-y-4">
-          <Champ label="Matière"><Liste value={matiere} onChange={(e) => setMatiere(e.target.value)} options={matieres.map((x) => x.nom)} /></Champ>
+          {!classeFixe && <Champ label="Classe" aide="Les classes où cet enseignant a une matière."><Liste value={classe} onChange={(e) => changerClasse(e.target.value)} options={classesPossibles} /></Champ>}
+          <Champ label="Matière"><Liste value={m?.nom ?? ''} onChange={(e) => setMatiere(e.target.value)} options={matieres.map((x) => x.nom)} /></Champ>
           <Champ label="Enseignant" aide="L’enseignant de la matière dans cette classe."><Saisie value={prof || 'À attribuer dans « Matières »'} readOnly className="bg-papier" /></Champ>
           <Champ label="Salle"><Saisie value={salle} onChange={(e) => setSalle(e.target.value)} /></Champ>
+          {conflitClasse && <Note ton="feutre">Conflit : la {classe} a déjà {conflitClasse.matiere} à ce moment.</Note>}
           {conflitProf && <Note ton="feutre">Conflit : {prof} a déjà cours en {conflitProf.classe} à ce moment ({conflitProf.matiere}).</Note>}
           {conflitSalle && <Note ton="feutre">Conflit : la {salle} est occupée par la {conflitSalle.classe} à ce moment.</Note>}
           {!prof && <Note ton="feutre">Attribuez d’abord un enseignant à cette matière.</Note>}
@@ -362,4 +378,3 @@ function AjoutCreneau({ classe, jour, plage, onClose, onAjout }: { classe: strin
     </Modal>
   );
 }
-
