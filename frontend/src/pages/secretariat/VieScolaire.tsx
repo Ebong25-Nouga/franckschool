@@ -202,7 +202,7 @@ function Selecteur({ label, valeur, options, onChange }: { label: string; valeur
  * L'emploi du temps d'un enseignant est déduit automatiquement de celui des classes.
  */
 export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolean }) {
-  const { etat, ajouter, enlever } = useSecretariat();
+  const { etat, ajouter, modifier, enlever } = useSecretariat();
   const toast = useToast();
   const [params] = useSearchParams();
   const classes = visibles(etat.classes);
@@ -214,6 +214,8 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
     return p ? cleProf(p) : '';
   });
   const [ajout, setAjout] = useState<{ jour: Creneau['jour']; plage: Creneau['plage'] } | null>(null);
+  const [edition, setEdition] = useState<Creneau | null>(null);
+  const [aSupprimer, setASupprimer] = useState<Creneau | null>(null);
   const enseignant = profs.find((e) => cleProf(e) === prof);
   const nomProf = enseignant ? `${enseignant.civilite} ${enseignant.nom} ${enseignant.prenom}` : prof;
   const creneaux = vue === 'classe' ? etat.creneaux.filter((c) => c.classe === classe) : etat.creneaux.filter((c) => duProf(c, prof));
@@ -237,8 +239,8 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
 
   const retirerCreneau = (c: Creneau) => {
     // Un créneau d'emploi du temps n'est pas une donnée historique : on le retire, la trace reste au journal
-    enlever('creneaux', c.id, { operation: 'Retrait de créneau', module: 'Emplois du temps', element: `${c.classe}, ${c.jour} ${c.plage}`, avant: `${c.matiere}, ${c.prof}, ${c.salle}` });
-    toast('Créneau retiré.');
+    enlever('creneaux', c.id, { operation: 'Suppression de cours', module: 'Emplois du temps', element: `${c.classe}, ${c.jour} ${c.plage}`, avant: `${c.matiere}, ${c.prof}, ${c.salle}` });
+    toast('Cours supprimé de l’emploi du temps.');
   };
 
   const optionsClasses = classes.map((c) => {
@@ -287,7 +289,7 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
       </div>
 
       <section className="overflow-x-auto rounded-[22px] bg-white p-4 shadow-feuille sm:p-5">
-        <div className="grid min-w-[820px] grid-cols-[110px_repeat(5,1fr)] gap-2">
+        <div className="grid min-w-[820px] grid-cols-[110px_repeat(5,minmax(0,1fr))] gap-2">
           <span />
           {jours.map((j) => <p key={j} className="px-2 py-1 text-center text-sm font-bold">{j}</p>)}
           {plages.map((p) => (
@@ -297,11 +299,16 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
                 const c = cellule(j, p);
                 if (c)
                   return (
-                    <div key={j} className="group relative min-h-24 rounded-xl bg-brand-50 p-3 shadow-[inset_3px_0_0] shadow-brand-700 ring-1 ring-inset ring-brand-100">
-                      <p className="pr-6 text-[14px] font-bold leading-snug text-brand-900">{ligne1(c)}</p>
+                    <div key={j} className="flex min-h-24 flex-col rounded-xl bg-brand-50 p-3 shadow-[inset_3px_0_0] shadow-brand-700 ring-1 ring-inset ring-brand-100">
+                      <p className="text-[14px] font-bold leading-snug text-brand-900">{ligne1(c)}</p>
                       <p className="mt-1 text-xs text-brand-800">{ligne2(c)}</p>
                       <p className="text-xs text-encre-doux">{c.salle}</p>
-                      {modifiable && <button onClick={() => retirerCreneau(c)} className="absolute right-1.5 top-1.5 grid size-8 cursor-pointer place-items-center rounded-lg text-encre-pale opacity-0 transition-opacity hover:bg-white hover:text-stylo focus:opacity-100 group-hover:opacity-100" aria-label={`Retirer ${c.matiere}, ${j} ${p}`}><Trash2 className="size-4" /></button>}
+                      {modifiable && (
+                        <div className="mt-auto flex flex-wrap gap-1 pt-2">
+                          <button onClick={() => setEdition(c)} className="inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-lg bg-white px-2 text-xs font-semibold text-brand-800 ring-1 ring-inset ring-brand-100 hover:ring-brand-300" aria-label={`Modifier ${c.matiere}, ${c.classe}, ${j} ${p}`}><Pencil className="size-3.5" aria-hidden />Modifier</button>
+                          <button onClick={() => setASupprimer(c)} className="inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-lg bg-white px-2 text-xs font-semibold text-stylo ring-1 ring-inset ring-brand-100 hover:ring-stylo/40" aria-label={`Supprimer ${c.matiere}, ${c.classe}, ${j} ${p}`}><Trash2 className="size-3.5" aria-hidden />Supprimer</button>
+                        </div>
+                      )}
                     </div>
                   );
                 return modifiable ? (
@@ -321,7 +328,34 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
           <Note>{vue === 'classe' ? `La ${classe} n’a pas encore d’emploi du temps.` : `${nomProf} n’a encore aucun cours.`}{modifiable ? ' Cliquez sur une case « + » pour ajouter un cours.' : ''}</Note>
         </div>
       )}
-      {!lectureSeule && <p className="mt-3 text-[13px] text-encre-doux">{vue === 'classe' ? 'Cliquez sur une case « + » pour ajouter un cours, ou sur la corbeille d’un cours pour le retirer.' : 'Cliquez sur une case « + » pour donner un cours à cet enseignant dans l’une de ses classes. Le cours apparaît aussi dans l’emploi du temps de la classe.'}</p>}
+      {!lectureSeule && <p className="mt-3 text-[13px] text-encre-doux">{vue === 'classe' ? 'Cliquez sur une case « + » pour ajouter un cours. Chaque cours peut être modifié (matière, jour, horaire, salle) ou supprimé.' : 'Cliquez sur une case « + » pour donner un cours à cet enseignant dans l’une de ses classes. Chaque cours peut être modifié ou supprimé ; le changement apparaît aussi dans l’emploi du temps de la classe.'}</p>}
+      {edition && (
+        <AjoutCreneau
+          existant={edition}
+          classe={vue === 'classe' ? classe : undefined}
+          prof={vue === 'prof' ? prof : undefined}
+          jour={edition.jour}
+          plage={edition.plage}
+          onClose={() => setEdition(null)}
+          onAjout={(c) => {
+            const avant = `${edition.jour} ${edition.plage} · ${edition.classe}, ${edition.matiere}, ${edition.salle}`;
+            const apres = `${c.jour} ${c.plage} · ${c.classe}, ${c.matiere}, ${c.salle}`;
+            if (avant === apres) return toast('Aucun changement.');
+            modifier('creneaux', edition.id, c, { operation: 'Modification de cours', module: 'Emplois du temps', element: `${edition.classe}, ${edition.matiere}`, avant, apres });
+            toast('Cours modifié.');
+          }}
+        />
+      )}
+      {aSupprimer && (
+        <Modal
+          title="Supprimer ce cours ?"
+          lead={`${aSupprimer.matiere} · ${aSupprimer.classe} · ${aSupprimer.prof} · ${aSupprimer.jour}, ${aSupprimer.plage}`}
+          onClose={() => setASupprimer(null)}
+          footer={<><Button variant="secondary" onClick={() => setASupprimer(null)}>Annuler</Button><Button variant="danger" icon={Trash2} onClick={() => { retirerCreneau(aSupprimer); setASupprimer(null); }}>Supprimer</Button></>}
+        >
+          <p className="text-sm text-encre-doux">Le cours disparaît de l’emploi du temps de la classe et de celui de l’enseignant. La suppression est notée dans le journal.</p>
+        </Modal>
+      )}
       {ajout && (
         <AjoutCreneau
           classe={vue === 'classe' ? classe : undefined}
@@ -339,22 +373,25 @@ export function EmploisDuTemps({ lectureSeule = false }: { lectureSeule?: boolea
 }
 
 /** Ajout d'un cours, depuis la grille d'une classe (classe connue) ou d'un enseignant (enseignant connu). */
-function AjoutCreneau({ classe: classeFixe, prof: profFixe, jour, plage, onClose, onAjout }: { classe?: string; prof?: string; jour: Creneau['jour']; plage: Creneau['plage']; onClose: () => void; onAjout: (c: Omit<Creneau, 'id'>) => void }) {
+function AjoutCreneau({ existant, classe: classeFixe, prof: profFixe, jour: jourInitial, plage: plageInitiale, onClose, onAjout }: { existant?: Creneau; classe?: string; prof?: string; jour: Creneau['jour']; plage: Creneau['plage']; onClose: () => void; onAjout: (c: Omit<Creneau, 'id'>) => void }) {
+  const [jour, setJour] = useState<Creneau['jour']>(jourInitial);
+  const [plage, setPlage] = useState<Creneau['plage']>(plageInitiale);
+  const autre = (c: Creneau) => c.id !== existant?.id;
   const { etat } = useSecretariat();
   const toutes = visibles(etat.matieres);
   const duProfM = (m: { prof: string }) => !profFixe || m.prof === profFixe || m.prof.startsWith(`${profFixe} `);
   // Depuis un enseignant : seulement les classes où il enseigne
   const classesPossibles = classeFixe ? [classeFixe] : [...new Set(toutes.filter(duProfM).map((m) => m.classe))];
-  const [classe, setClasse] = useState(classesPossibles[0] ?? '');
+  const [classe, setClasse] = useState(existant?.classe ?? classesPossibles[0] ?? '');
   const matieres = toutes.filter((m) => m.classe === classe && duProfM(m));
-  const [matiere, setMatiere] = useState(matieres[0]?.nom ?? '');
+  const [matiere, setMatiere] = useState(existant?.matiere ?? matieres[0]?.nom ?? '');
   const m = matieres.find((x) => x.nom === matiere) ?? matieres[0];
   const salleDe = (c: string) => visibles(etat.classes).find((x) => x.nom === c)?.salle ?? '';
-  const [salle, setSalle] = useState(salleDe(classe));
+  const [salle, setSalle] = useState(existant?.salle ?? salleDe(classe));
   const prof = m?.prof ?? '';
-  const conflitClasse = etat.creneaux.find((c) => c.classe === classe && c.jour === jour && c.plage === plage);
-  const conflitProf = prof && etat.creneaux.find((c) => c.jour === jour && c.plage === plage && c.prof === prof);
-  const conflitSalle = salle && etat.creneaux.find((c) => c.jour === jour && c.plage === plage && c.salle === salle && c.classe !== classe);
+  const conflitClasse = etat.creneaux.find((c) => autre(c) && c.classe === classe && c.jour === jour && c.plage === plage);
+  const conflitProf = prof && etat.creneaux.find((c) => autre(c) && c.jour === jour && c.plage === plage && c.prof === prof);
+  const conflitSalle = salle && etat.creneaux.find((c) => autre(c) && c.jour === jour && c.plage === plage && c.salle === salle && c.classe !== classe);
   const ok = m && prof && !conflitClasse && !conflitProf && !conflitSalle;
   const changerClasse = (c: string) => {
     setClasse(c);
@@ -362,9 +399,15 @@ function AjoutCreneau({ classe: classeFixe, prof: profFixe, jour, plage, onClose
     setSalle(salleDe(c));
   };
   return (
-    <Modal title="Ajouter un cours" lead={`${classeFixe ?? profFixe} · ${jour}, ${plage}`} onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button disabled={!ok} onClick={() => m && (onAjout({ classe, jour, plage, matiere: m.nom, prof, salle: salle.trim() || '—' }), onClose())}>Ajouter</Button></>}>
+    <Modal title={existant ? 'Modifier le cours' : 'Ajouter un cours'} lead={existant ? `${existant.matiere} · ${existant.classe} · ${existant.jour}, ${existant.plage}` : `${classeFixe ?? profFixe} · ${jour}, ${plage}`} onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Annuler</Button><Button disabled={!ok} onClick={() => m && (onAjout({ classe, jour, plage, matiere: m.nom, prof, salle: salle.trim() || '—' }), onClose())}>{existant ? 'Enregistrer' : 'Ajouter'}</Button></>}>
       {classesPossibles.length === 0 ? <Note ton="feutre">Cet enseignant n’a aucune matière attribuée. Attribuez-lui d’abord une matière dans « Matières ».</Note> : matieres.length === 0 && classeFixe ? <Note ton="feutre">Cette classe n’a pas de matière. Ajoutez d’abord ses matières.</Note> : (
         <div className="space-y-4">
+          {existant && (
+            <Grille>
+              <Champ label="Jour"><Liste value={jour} onChange={(e) => setJour(e.target.value as Creneau['jour'])} options={[...jours]} /></Champ>
+              <Champ label="Horaire"><Liste value={plage} onChange={(e) => setPlage(e.target.value as Creneau['plage'])} options={[...plages]} /></Champ>
+            </Grille>
+          )}
           {!classeFixe && <Champ label="Classe" aide="Les classes où cet enseignant a une matière."><Liste value={classe} onChange={(e) => changerClasse(e.target.value)} options={classesPossibles} /></Champ>}
           <Champ label="Matière"><Liste value={m?.nom ?? ''} onChange={(e) => setMatiere(e.target.value)} options={matieres.map((x) => x.nom)} /></Champ>
           <Champ label="Enseignant" aide="L’enseignant de la matière dans cette classe."><Saisie value={prof || 'À attribuer dans « Matières »'} readOnly className="bg-papier" /></Champ>
